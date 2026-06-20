@@ -1,0 +1,8 @@
+[
+  {
+    "id": "approval-pm-create-task",
+    "requestId": "pm-create-task",
+    "required": true,
+    "prompt": "Approve creating a project task in project_demo_456?"
+  }
+]

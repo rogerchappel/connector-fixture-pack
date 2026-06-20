@@ -1,0 +1,12 @@
+[
+  {
+    "id": "pm-create-task-dry-run",
+    "requestId": "pm-create-task",
+    "status": "dry_run",
+    "body": {
+      "wouldCreate": true,
+      "externalWrite": false,
+      "previewId": "preview_task_001"
+    }
+  }
+]

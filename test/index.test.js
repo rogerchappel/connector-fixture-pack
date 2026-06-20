@@ -18,6 +18,12 @@ test("renders a deterministic review pack", async () => {
   assert.match(markdown, /Lint status: pass/);
 });
 
+test("lints a project-management dry-run bundle", async () => {
+  const report = await lintBundle("fixtures/project-basic");
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.findings, []);
+});
+
 test("flags secret-like fixture values", async () => {
   const report = await lintBundle("fixtures/messaging-risky");
   assert.equal(report.ok, false);

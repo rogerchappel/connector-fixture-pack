@@ -1,0 +1,7 @@
+{
+  "name": "project-basic",
+  "version": "0.1.0",
+  "description": "Synthetic project-management task fixture for local connector skill tests.",
+  "connectors": ["project-management"],
+  "generatedBy": "connector-fixture-pack"
+}

@@ -1,0 +1,30 @@
+{
+  "name": "connector-fixture-pack",
+  "version": "0.1.0",
+  "description": "Local-first fixture bundles for connector skills and dry-run action plans.",
+  "type": "module",
+  "bin": {
+    "connector-fixture-pack": "./bin/connector-fixture-pack.js"
+  },
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check-package.js",
+    "smoke": "node bin/connector-fixture-pack.js lint fixtures/crm-basic && node bin/connector-fixture-pack.js render fixtures/crm-basic",
+    "build": "node scripts/check-package.js"
+  },
+  "keywords": [
+    "agent-skills",
+    "connectors",
+    "fixtures",
+    "dry-run",
+    "approval"
+  ],
+  "author": "Roger Chappel",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

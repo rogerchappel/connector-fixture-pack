@@ -1,0 +1,14 @@
+[
+  {
+    "id": "crm-create-note",
+    "connector": "crm",
+    "operation": "create_note",
+    "method": "POST",
+    "path": "/v1/contacts/contact_demo_123/notes",
+    "body": {
+      "contactId": "contact_demo_123",
+      "note": "Follow up with the demo account next week.",
+      "owner": "agent@example.invalid"
+    }
+  }
+]

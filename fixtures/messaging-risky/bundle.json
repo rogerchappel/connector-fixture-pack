@@ -1,0 +1,7 @@
+{
+  "name": "messaging-risky",
+  "version": "0.1.0",
+  "description": "Fixture with a secret-like token to prove lint failures.",
+  "connectors": ["messaging"],
+  "generatedBy": "connector-fixture-pack"
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Connector Fixture Request",
+  "type": "object",
+  "required": ["id", "connector", "operation", "method", "path", "body"],
+  "properties": {
+    "id": { "type": "string" },
+    "connector": { "type": "string" },
+    "operation": { "type": "string" },
+    "method": { "type": "string" },
+    "path": { "type": "string" },
+    "body": { "type": "object" }
+  }
+}

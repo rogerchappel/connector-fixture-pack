@@ -1,0 +1,6 @@
+[
+  {
+    "path": "$.requests[0].body.token",
+    "reason": "Secret-like fixture value must be replaced before publication."
+  }
+]

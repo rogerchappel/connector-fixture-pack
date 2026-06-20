@@ -1,0 +1,10 @@
+[
+  {
+    "id": "send-message-blocked",
+    "requestId": "send-message",
+    "status": "blocked",
+    "body": {
+      "externalWrite": true
+    }
+  }
+]

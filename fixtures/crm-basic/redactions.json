@@ -1,0 +1,6 @@
+[
+  {
+    "path": "$.requests[0].body.owner",
+    "reason": "Synthetic email placeholder documents where owner data would appear."
+  }
+]

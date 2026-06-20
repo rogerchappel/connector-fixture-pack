@@ -1,0 +1,7 @@
+{
+  "name": "crm-basic",
+  "version": "0.1.0",
+  "description": "Synthetic CRM note fixture for local connector skill tests.",
+  "connectors": ["crm"],
+  "generatedBy": "connector-fixture-pack"
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Connector Fixture Response",
+  "type": "object",
+  "required": ["id", "requestId", "status", "body"],
+  "properties": {
+    "id": { "type": "string" },
+    "requestId": { "type": "string" },
+    "status": { "enum": ["dry_run", "mocked", "blocked"] },
+    "body": { "type": "object" }
+  }
+}

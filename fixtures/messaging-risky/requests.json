@@ -1,0 +1,14 @@
+[
+  {
+    "id": "send-message",
+    "connector": "messaging",
+    "operation": "send_message",
+    "method": "POST",
+    "path": "/v1/messages",
+    "body": {
+      "channel": "demo",
+      "text": "hello",
+      "token": "Bearer abcdefghijklmnopqrstuvwxyz"
+    }
+  }
+]

@@ -1,0 +1,8 @@
+[
+  {
+    "id": "approval-crm-create-note",
+    "requestId": "crm-create-note",
+    "required": true,
+    "prompt": "Approve creating a CRM note for contact_demo_123?"
+  }
+]

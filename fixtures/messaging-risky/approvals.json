@@ -1,0 +1,8 @@
+[
+  {
+    "id": "approval-send-message",
+    "requestId": "send-message",
+    "required": true,
+    "prompt": "Approve sending a demo message?"
+  }
+]

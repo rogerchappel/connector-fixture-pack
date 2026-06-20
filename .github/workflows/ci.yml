@@ -1,40 +1,19 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [main, "release-candidate/**"]
+  pull_request:
 
 permissions:
   contents: read
 
 jobs:
-  verify:
-    name: Verify package
+  release-check:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run checks
-        run: npm run check
-
-      - name: Run tests
-        run: npm test
-
-      - name: Run smoke test
-        run: npm run smoke
-
-      - name: Run package smoke
-        run: npm run package:smoke
+          node-version: "20"
+      - run: npm run release:check

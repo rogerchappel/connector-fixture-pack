@@ -9,25 +9,13 @@
   "exports": {
     ".": "./src/index.js"
   },
-  "files": [
-    "bin",
-    "docs",
-    "fixtures",
-    "schemas",
-    "scripts",
-    "src",
-    "test",
-    "README.md",
-    "SKILL.md",
-    "LICENSE"
-  ],
   "scripts": {
     "test": "node --test",
     "check": "node scripts/check-package.js",
     "smoke": "node bin/connector-fixture-pack.js lint fixtures/crm-basic && node bin/connector-fixture-pack.js render fixtures/crm-basic",
     "build": "node scripts/check-package.js",
     "package:smoke": "npm pack --dry-run",
-    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke"
+    "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run package:smoke"
   },
   "keywords": [
     "agent-skills",
@@ -38,6 +26,9 @@
   ],
   "author": "Roger Chappel",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rogerchappel/connector-fixture-pack.git"
@@ -46,7 +37,14 @@
     "url": "https://github.com/rogerchappel/connector-fixture-pack/issues"
   },
   "homepage": "https://github.com/rogerchappel/connector-fixture-pack#readme",
-  "engines": {
-    "node": ">=20"
-  }
+  "files": [
+    "bin",
+    "src",
+    "schemas",
+    "docs",
+    "fixtures",
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ]
 }

@@ -9,6 +9,16 @@
   "exports": {
     ".": "./src/index.js"
   },
+  "files": [
+    "bin",
+    "src",
+    "schemas",
+    "fixtures",
+    "docs",
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "node --test",
     "check": "node scripts/check-package.js",
@@ -26,6 +36,14 @@
   ],
   "author": "Roger Chappel",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rogerchappel/connector-fixture-pack.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rogerchappel/connector-fixture-pack/issues"
+  },
+  "homepage": "https://github.com/rogerchappel/connector-fixture-pack#readme",
   "engines": {
     "node": ">=20"
   },

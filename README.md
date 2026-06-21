@@ -13,6 +13,16 @@ node bin/connector-fixture-pack.js lint tmp/sample-bundle
 node bin/connector-fixture-pack.js render tmp/sample-bundle
 ```
 
+## Release Verification
+
+Run the release gate before tagging or publishing:
+
+```sh
+npm run release:check
+```
+
+The release gate runs package checks, tests, the fixture-backed CLI smoke, and a dry-run `npm pack` so schemas, fixtures, and runtime files are visible before publication.
+
 ## CLI
 
 - `connector-fixture-pack init <dir>` scaffolds a safe fixture bundle.

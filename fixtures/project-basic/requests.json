@@ -1,0 +1,14 @@
+[
+  {
+    "id": "pm-create-task",
+    "connector": "project-management",
+    "operation": "create_task",
+    "method": "POST",
+    "path": "/v1/projects/project_demo_456/tasks",
+    "body": {
+      "projectId": "project_demo_456",
+      "title": "Prepare launch checklist",
+      "assignee": "teammate@example.invalid"
+    }
+  }
+]

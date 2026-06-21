@@ -191,7 +191,7 @@ function validateRedactions(redactions, bundle, findings) {
   }
 
   const serialized = JSON.stringify(bundle);
-  if (serialized.includes("@") && ![...paths].some((item) => item.includes("owner") || item.includes("email"))) {
+  if (serialized.includes("@") && ![...paths].some((item) => /owner|email|assignee|recipient|sender/i.test(item))) {
     findings.push(finding("warning", "redactions.json", "Email-like fixture data should be covered by a redaction path."));
   }
 }

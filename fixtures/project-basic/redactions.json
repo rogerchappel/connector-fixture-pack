@@ -1,0 +1,6 @@
+[
+  {
+    "path": "$.requests[0].body.assignee",
+    "reason": "Synthetic email placeholder documents where assignee data would appear."
+  }
+]

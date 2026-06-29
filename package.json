@@ -27,7 +27,7 @@
     "check": "node scripts/check-package.js",
     "smoke": "node bin/connector-fixture-pack.js lint fixtures/crm-basic && node bin/connector-fixture-pack.js render fixtures/crm-basic",
     "build": "node scripts/check-package.js",
-    "package:smoke": "npm pack --dry-run",
+    "package:smoke": "node scripts/package-smoke.js",
     "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run package:smoke"
   },
   "keywords": [

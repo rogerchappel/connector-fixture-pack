@@ -17,7 +17,10 @@
     "docs",
     "SKILL.md",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "test": "node --test",
@@ -54,15 +57,5 @@
   "bugs": {
     "url": "https://github.com/rogerchappel/connector-fixture-pack/issues"
   },
-  "homepage": "https://github.com/rogerchappel/connector-fixture-pack#readme",
-  "files": [
-    "bin",
-    "src",
-    "schemas",
-    "docs",
-    "fixtures",
-    "SKILL.md",
-    "README.md",
-    "LICENSE"
-  ]
+  "homepage": "https://github.com/rogerchappel/connector-fixture-pack#readme"
 }

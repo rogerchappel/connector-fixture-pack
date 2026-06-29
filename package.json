@@ -17,14 +17,17 @@
     "docs",
     "SKILL.md",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "test": "node --test",
     "check": "node scripts/check-package.js",
     "smoke": "node bin/connector-fixture-pack.js lint fixtures/crm-basic && node bin/connector-fixture-pack.js render fixtures/crm-basic",
     "build": "node scripts/check-package.js",
-    "package:smoke": "npm pack --dry-run",
+    "package:smoke": "node scripts/package-smoke.js",
     "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run package:smoke"
   },
   "keywords": [
@@ -54,15 +57,5 @@
   "bugs": {
     "url": "https://github.com/rogerchappel/connector-fixture-pack/issues"
   },
-  "homepage": "https://github.com/rogerchappel/connector-fixture-pack#readme",
-  "files": [
-    "bin",
-    "src",
-    "schemas",
-    "docs",
-    "fixtures",
-    "SKILL.md",
-    "README.md",
-    "LICENSE"
-  ]
+  "homepage": "https://github.com/rogerchappel/connector-fixture-pack#readme"
 }

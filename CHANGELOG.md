@@ -1,0 +1,9 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## 0.1.0 - Initial release candidate
+
+- Provides local connector fixture bundle scaffolding, linting, and Markdown review rendering.
+- Ships schemas and sanitized example fixtures for dry-run connector workflows.
+- Includes tests, fixture-backed smoke coverage, and release verification commands.

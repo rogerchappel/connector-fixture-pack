@@ -49,13 +49,5 @@
   "homepage": "https://github.com/rogerchappel/connector-fixture-pack#readme",
   "engines": {
     "node": ">=20"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rogerchappel/connector-fixture-pack.git"
-  },
-  "bugs": {
-    "url": "https://github.com/rogerchappel/connector-fixture-pack/issues"
-  },
-  "homepage": "https://github.com/rogerchappel/connector-fixture-pack#readme"
+  }
 }

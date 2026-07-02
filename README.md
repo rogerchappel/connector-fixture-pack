@@ -6,6 +6,7 @@
 
 ```sh
 npm install
+npm run lint
 npm test
 npm run smoke
 node bin/connector-fixture-pack.js init tmp/sample-bundle

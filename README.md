@@ -19,6 +19,7 @@ node bin/connector-fixture-pack.js render tmp/sample-bundle
 Run the release gate before tagging or publishing:
 
 ```sh
+npm run lint
 npm run release:check
 ```
 

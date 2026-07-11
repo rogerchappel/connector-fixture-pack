@@ -8,6 +8,7 @@ const files = new Set(pack.files.map((file) => file.path));
 
 const required = [
   "bin/connector-fixture-pack.js",
+  "scripts/package-smoke.js",
   "src/index.js",
   "schemas/bundle.schema.json",
   "fixtures/crm-basic/bundle.json",

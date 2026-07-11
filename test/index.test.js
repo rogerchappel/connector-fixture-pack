@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -39,4 +40,18 @@ test("initializes a usable bundle", async () => {
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test("CLI smoke renders a review pack", () => {
+  const output = execFileSync(process.execPath, [
+    "bin/connector-fixture-pack.js",
+    "render",
+    "fixtures/crm-basic"
+  ], {
+    cwd: new URL("..", import.meta.url),
+    encoding: "utf8"
+  });
+
+  assert.match(output, /Connector Fixture Review: crm-basic/);
+  assert.match(output, /crm-create-note/);
 });

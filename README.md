@@ -31,6 +31,12 @@ The release gate runs package checks, tests, the fixture-backed CLI smoke, and a
 - `connector-fixture-pack lint <dir>` validates bundle files and prints JSON.
 - `connector-fixture-pack render <dir>` emits a Markdown review pack.
 
+`lint` exits with status `1` when the bundle has release-blocking findings, which makes it safe to use in CI and pre-release scripts:
+
+```sh
+node bin/connector-fixture-pack.js lint fixtures/crm-basic
+```
+
 ## Library
 
 ```js

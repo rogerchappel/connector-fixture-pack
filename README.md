@@ -50,6 +50,8 @@ npm pack --dry-run
 node bin/connector-fixture-pack.js lint fixtures/crm-basic
 ```
 
+The lint pass also verifies that responses and approval prompts point at real request ids, so stale fixture edits fail before they become release examples.
+
 ## Library
 
 ```js

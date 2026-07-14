@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Validate response and approval `requestId` references during fixture linting.
 - Add release-readiness checks for package metadata, pack contents, and CI verification.
 All notable changes to this project will be documented in this file.
 

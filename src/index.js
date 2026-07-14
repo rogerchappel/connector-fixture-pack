@@ -53,6 +53,8 @@ export async function lintBundle(directory) {
   validateEntries("requests.json", bundle["requests.json"], findings, ["id", "connector", "operation", "method", "path", "body"]);
   validateEntries("responses.json", bundle["responses.json"], findings, ["id", "requestId", "status", "body"]);
   validateEntries("approvals.json", bundle["approvals.json"], findings, ["id", "requestId", "prompt", "required"]);
+  validateRequestReferences(bundle["requests.json"], bundle["responses.json"], "responses.json", findings);
+  validateRequestReferences(bundle["requests.json"], bundle["approvals.json"], "approvals.json", findings);
   validateRedactions(bundle["redactions.json"], bundle, findings);
   scanSecretLikeValues(bundle, findings);
 
@@ -175,6 +177,17 @@ function validateEntries(file, entries, findings, requiredKeys) {
     }
     if (entry.id) ids.add(entry.id);
   });
+}
+
+function validateRequestReferences(requests, entries, file, findings) {
+  if (!Array.isArray(requests) || !Array.isArray(entries)) return;
+
+  const requestIds = new Set(requests.map((request) => request.id).filter(Boolean));
+  for (const entry of entries) {
+    if (entry.requestId && !requestIds.has(entry.requestId)) {
+      findings.push(finding("error", file, `Unknown requestId ${entry.requestId}.`));
+    }
+  }
 }
 
 function validateRedactions(redactions, bundle, findings) {

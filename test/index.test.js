@@ -53,6 +53,28 @@ test("flags responses and approvals that reference missing requests", async () =
   }
 });
 
+test("requires boolean true approval for write requests", async () => {
+  for (const required of [false, "true", 1, null]) {
+    const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-approval-"));
+    try {
+      await initBundle(directory, { name: "invalid-approval" });
+      await writeFile(
+        path.join(directory, "approvals.json"),
+        `${JSON.stringify([{ id: "approval-1", requestId: "crm-create-note", required, prompt: "Approve?" }], null, 2)}\n`
+      );
+
+      const report = await lintBundle(directory);
+      assert.equal(report.ok, false);
+      assert.equal(
+        report.findings.some((item) => item.message.includes("must set required to boolean true")),
+        true
+      );
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+});
+
 test("initializes a usable bundle", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-"));
   try {

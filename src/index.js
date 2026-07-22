@@ -17,6 +17,8 @@ const SECRET_PATTERNS = [
   /AKIA[0-9A-Z]{16}/
 ];
 
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+
 export async function initBundle(directory, options = {}) {
   await mkdir(directory, { recursive: true });
   const name = options.name ?? path.basename(directory);
@@ -55,6 +57,7 @@ export async function lintBundle(directory) {
   validateEntries("approvals.json", bundle["approvals.json"], findings, ["id", "requestId", "prompt", "required"]);
   validateRequestReferences(bundle["requests.json"], bundle["responses.json"], "responses.json", findings);
   validateRequestReferences(bundle["requests.json"], bundle["approvals.json"], "approvals.json", findings);
+  validateApprovalRequirements(bundle["requests.json"], bundle["approvals.json"], findings);
   validateRedactions(bundle["redactions.json"], bundle, findings);
   scanSecretLikeValues(bundle, findings);
 
@@ -186,6 +189,24 @@ function validateRequestReferences(requests, entries, file, findings) {
   for (const entry of entries) {
     if (entry.requestId && !requestIds.has(entry.requestId)) {
       findings.push(finding("error", file, `Unknown requestId ${entry.requestId}.`));
+    }
+  }
+}
+
+function validateApprovalRequirements(requests, approvals, findings) {
+  if (!Array.isArray(requests) || !Array.isArray(approvals)) return;
+
+  const requestsById = new Map(requests.map((request) => [request.id, request]));
+  for (const approval of approvals) {
+    const request = requestsById.get(approval.requestId);
+    if (!request?.method || SAFE_METHODS.has(String(request.method).toUpperCase())) continue;
+
+    if (approval.required !== true) {
+      findings.push(finding(
+        "error",
+        "approvals.json",
+        `Approval ${approval.id ?? approval.requestId} must set required to boolean true for ${request.method} request ${request.id}.`
+      ));
     }
   }
 }

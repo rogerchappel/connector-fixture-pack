@@ -197,9 +197,11 @@ function validateApprovalRequirements(requests, approvals, findings) {
   if (!Array.isArray(requests) || !Array.isArray(approvals)) return;
 
   const requestsById = new Map(requests.map((request) => [request.id, request]));
+  const approvalRequestIds = new Set();
   for (const approval of approvals) {
     const request = requestsById.get(approval.requestId);
-    if (!request?.method || SAFE_METHODS.has(String(request.method).toUpperCase())) continue;
+    if (!request?.method || isSafeMethod(request.method)) continue;
+    approvalRequestIds.add(approval.requestId);
 
     if (approval.required !== true) {
       findings.push(finding(
@@ -209,6 +211,25 @@ function validateApprovalRequirements(requests, approvals, findings) {
       ));
     }
   }
+
+  for (const request of requests) {
+    if (!request?.id || !request.method || isSafeMethod(request.method)) continue;
+    if (!approvalRequestIds.has(request.id)) {
+      findings.push(finding(
+        "error",
+        "approvals.json",
+        `${normalizeMethod(request.method)} request ${request.id} requires an approval with required set to boolean true.`
+      ));
+    }
+  }
+}
+
+function isSafeMethod(method) {
+  return SAFE_METHODS.has(normalizeMethod(method));
+}
+
+function normalizeMethod(method) {
+  return String(method).trim().toUpperCase();
 }
 
 function validateRedactions(redactions, bundle, findings) {

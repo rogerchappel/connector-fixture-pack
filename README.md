@@ -50,7 +50,7 @@ npm pack --dry-run
 node bin/connector-fixture-pack.js lint fixtures/crm-basic
 ```
 
-The lint pass also verifies that responses and approval prompts point at real request ids, so stale fixture edits fail before they become release examples.
+The lint pass also verifies that responses and approval prompts point at real request ids, so stale fixture edits fail before they become release examples. Every request whose HTTP method is not `GET`, `HEAD`, `OPTIONS`, or `TRACE` must have a corresponding approval entry with `required` set to the boolean `true`. Read-only requests do not require approval entries.
 
 ## Library
 
@@ -66,6 +66,7 @@ const markdown = await renderReviewPack("fixtures/crm-basic");
 - The tool never calls external services.
 - Fixture examples must use fake identifiers, placeholder tokens, and synthetic account data.
 - Linting fails when obvious secrets, live-looking tokens, or missing redaction coverage are detected.
+- Each write request must be documented by a required approval prompt; omitting that prompt is a release-blocking lint error.
 - Approval prompts are treated as documentation for tests, not as permission to execute live actions.
 
 ## Limitations

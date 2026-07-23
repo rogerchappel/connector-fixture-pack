@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Require every non-safe HTTP request to have an approval entry with `required: true`.
 - Validate response and approval `requestId` references during fixture linting.
 - Add release-readiness checks for package metadata, pack contents, and CI verification.
 All notable changes to this project will be documented in this file.

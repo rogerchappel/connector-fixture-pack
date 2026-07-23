@@ -75,6 +75,70 @@ test("requires boolean true approval for write requests", async () => {
   }
 });
 
+test("requires an approval entry for every write request", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-missing-approval-"));
+  try {
+    await initBundle(directory, { name: "missing-approval" });
+    await writeFile(path.join(directory, "approvals.json"), "[]\n");
+
+    const report = await lintBundle(directory);
+    assert.equal(report.ok, false);
+    assert.equal(
+      report.findings.some((item) =>
+        item.file === "approvals.json"
+        && item.message.includes("POST request crm-create-note")
+      ),
+      true
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("requires approvals only for write requests in mixed bundles", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-mixed-approvals-"));
+  try {
+    await initBundle(directory, { name: "mixed-approvals" });
+    await writeFile(
+      path.join(directory, "requests.json"),
+      `${JSON.stringify([
+        {
+          id: "crm-list-contacts",
+          connector: "crm",
+          operation: "list_contacts",
+          method: "get",
+          path: "/v1/contacts",
+          body: {}
+        },
+        {
+          id: "crm-create-note",
+          connector: "crm",
+          operation: "create_note",
+          method: "post",
+          path: "/v1/notes",
+          body: {}
+        }
+      ], null, 2)}\n`
+    );
+    await writeFile(path.join(directory, "approvals.json"), "[]\n");
+
+    const report = await lintBundle(directory);
+    assert.equal(report.ok, false);
+    assert.equal(report.findings.filter((item) => item.message.includes("requires an approval")).length, 1);
+    assert.match(report.findings.at(-1).message, /POST request crm-create-note/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("accepts write requests with required approvals", async () => {
+  const report = await lintBundle("fixtures/crm-basic");
+  assert.equal(
+    report.findings.some((item) => item.message.includes("requires an approval")),
+    false
+  );
+});
+
 test("initializes a usable bundle", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-"));
   try {

@@ -24,6 +24,33 @@ test('CLI lint exits non-zero for unsafe fixture bundles', () => {
   assert.equal(result.stderr, '');
 });
 
+test('CLI lint exits non-zero for schema-invalid fixture values', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'connector-fixture-pack-cli-schema-'));
+  try {
+    await cp('fixtures/crm-basic', directory, { recursive: true });
+    await writeFile(
+      path.join(directory, 'responses.json'),
+      `${JSON.stringify([{
+        id: 'response-1',
+        requestId: 'crm-create-note',
+        status: 'complete',
+        body: []
+      }], null, 2)}\n`
+    );
+
+    const result = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', 'lint', directory], {
+      encoding: 'utf8'
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /"ok": false/);
+    assert.match(result.stdout, /Entry 0 status must be one of: dry_run, mocked, blocked/);
+    assert.match(result.stdout, /Entry 0 body must be an object/);
+    assert.equal(result.stderr, '');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('CLI lint and render expose missing write approvals', async () => {
   const directory = await mkdtemp(path.join(tmpdir(), 'connector-fixture-pack-cli-approval-'));
   try {

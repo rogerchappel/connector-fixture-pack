@@ -50,7 +50,9 @@ npm pack --dry-run
 node bin/connector-fixture-pack.js lint fixtures/crm-basic
 ```
 
-The lint pass also verifies that responses and approval prompts point at real request ids, so stale fixture edits fail before they become release examples. Every request whose HTTP method is not `GET`, `HEAD`, `OPTIONS`, or `TRACE` must have a corresponding approval entry with `required` set to the boolean `true`. Read-only requests do not require approval entries.
+The lint pass enforces the shipped V1 bundle, request, and response schemas. Bundle names, versions, and connector names must be non-empty strings. Request ids, connector names, operations, methods, and paths must be non-empty strings, and request bodies must be objects. Response ids and request ids must be non-empty strings, response bodies must be objects, and response status must be `dry_run`, `mocked`, or `blocked`. Findings identify the source file and entry index.
+
+Linting also verifies that responses and approval prompts point at real request ids, so stale fixture edits fail before they become release examples. Every request whose HTTP method is not `GET`, `HEAD`, `OPTIONS`, or `TRACE` must have a corresponding approval entry with `required` set to the boolean `true`. Read-only requests do not require approval entries.
 
 ## Library
 
@@ -71,6 +73,6 @@ const markdown = await renderReviewPack("fixtures/crm-basic");
 
 ## Limitations
 
-- The schema validator is intentionally small and local. It checks the V1 fixture shape, not every possible API schema.
+- The schema validator is intentionally small and local. It enforces the published V1 fixture boundary, not connector-specific API payload schemas.
 - Secret detection is heuristic and should be paired with repository scanning before publication.
 - Rendering is deterministic Markdown for review, not a compliance report.

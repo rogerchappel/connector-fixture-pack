@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Enforce the published bundle, request, and response value constraints during fixture linting.
 - Require every non-safe HTTP request to have an approval entry with `required: true`.
 - Validate response and approval `requestId` references during fixture linting.
 - Add release-readiness checks for package metadata, pack contents, and CI verification.

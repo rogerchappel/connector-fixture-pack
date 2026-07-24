@@ -11,6 +11,8 @@ const required = [
   "scripts/package-smoke.js",
   "src/index.js",
   "schemas/bundle.schema.json",
+  "schemas/request.schema.json",
+  "schemas/response.schema.json",
   "fixtures/crm-basic/bundle.json",
   "SKILL.md",
   "README.md",

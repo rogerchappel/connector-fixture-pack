@@ -18,6 +18,7 @@ const SECRET_PATTERNS = [
 ];
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+const RESPONSE_STATUSES = new Set(["dry_run", "mocked", "blocked"]);
 
 export async function initBundle(directory, options = {}) {
   await mkdir(directory, { recursive: true });
@@ -53,7 +54,9 @@ export async function lintBundle(directory) {
 
   validateBundleMetadata(bundle["bundle.json"], findings);
   validateEntries("requests.json", bundle["requests.json"], findings, ["id", "connector", "operation", "method", "path", "body"]);
+  validateRequestShape(bundle["requests.json"], findings);
   validateEntries("responses.json", bundle["responses.json"], findings, ["id", "requestId", "status", "body"]);
+  validateResponseShape(bundle["responses.json"], findings);
   validateEntries("approvals.json", bundle["approvals.json"], findings, ["id", "requestId", "prompt", "required"]);
   validateRequestReferences(bundle["requests.json"], bundle["responses.json"], "responses.json", findings);
   validateRequestReferences(bundle["requests.json"], bundle["approvals.json"], "approvals.json", findings);
@@ -155,10 +158,25 @@ export function sampleBundle(name = "sample-connector-fixture") {
 }
 
 function validateBundleMetadata(metadata, findings) {
-  if (!metadata.name) findings.push(finding("error", "bundle.json", "Missing name."));
-  if (!metadata.version) findings.push(finding("error", "bundle.json", "Missing version."));
+  if (!isNonEmptyString(metadata.name)) {
+    findings.push(finding("error", "bundle.json", "name must be a non-empty string."));
+  }
+  if (!isNonEmptyString(metadata.version)) {
+    findings.push(finding("error", "bundle.json", "version must be a non-empty string."));
+  }
   if (!Array.isArray(metadata.connectors) || metadata.connectors.length === 0) {
-    findings.push(finding("warning", "bundle.json", "Connectors should list at least one connector family."));
+    findings.push(finding("error", "bundle.json", "connectors must be a non-empty array."));
+    return;
+  }
+  metadata.connectors.forEach((connector, index) => {
+    if (!isNonEmptyString(connector)) {
+      findings.push(finding("error", "bundle.json", `connectors[${index}] must be a non-empty string.`));
+    }
+  });
+  for (const field of ["description", "generatedBy"]) {
+    if (field in metadata && typeof metadata[field] !== "string") {
+      findings.push(finding("error", "bundle.json", `${field} must be a string when provided.`));
+    }
   }
 }
 
@@ -170,6 +188,10 @@ function validateEntries(file, entries, findings, requiredKeys) {
 
   const ids = new Set();
   entries.forEach((entry, index) => {
+    if (!isObject(entry)) {
+      findings.push(finding("error", file, `Entry ${index} must be an object.`));
+      return;
+    }
     for (const key of requiredKeys) {
       if (!(key in entry)) {
         findings.push(finding("error", file, `Entry ${index} is missing ${key}.`));
@@ -180,6 +202,57 @@ function validateEntries(file, entries, findings, requiredKeys) {
     }
     if (entry.id) ids.add(entry.id);
   });
+}
+
+function validateRequestShape(requests, findings) {
+  if (!Array.isArray(requests)) return;
+
+  requests.forEach((request, index) => {
+    if (!isObject(request)) return;
+    for (const field of ["id", "connector", "operation", "method", "path"]) {
+      validateNonEmptyString("requests.json", request, index, field, findings);
+    }
+    validateObjectField("requests.json", request, index, "body", findings);
+  });
+}
+
+function validateResponseShape(responses, findings) {
+  if (!Array.isArray(responses)) return;
+
+  responses.forEach((response, index) => {
+    if (!isObject(response)) return;
+    for (const field of ["id", "requestId"]) {
+      validateNonEmptyString("responses.json", response, index, field, findings);
+    }
+    if ("status" in response && !RESPONSE_STATUSES.has(response.status)) {
+      findings.push(finding(
+        "error",
+        "responses.json",
+        `Entry ${index} status must be one of: ${[...RESPONSE_STATUSES].join(", ")}.`
+      ));
+    }
+    validateObjectField("responses.json", response, index, "body", findings);
+  });
+}
+
+function validateNonEmptyString(file, entry, index, field, findings) {
+  if (field in entry && !isNonEmptyString(entry[field])) {
+    findings.push(finding("error", file, `Entry ${index} ${field} must be a non-empty string.`));
+  }
+}
+
+function validateObjectField(file, entry, index, field, findings) {
+  if (field in entry && !isObject(entry[field])) {
+    findings.push(finding("error", file, `Entry ${index} ${field} must be an object.`));
+  }
+}
+
+function isNonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function validateRequestReferences(requests, entries, file, findings) {

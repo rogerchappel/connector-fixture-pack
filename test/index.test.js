@@ -53,6 +53,114 @@ test("flags responses and approvals that reference missing requests", async () =
   }
 });
 
+test("rejects malformed bundle metadata with field-specific findings", async () => {
+  const invalidValues = [
+    ["name", "", "non-empty string"],
+    ["version", 1, "non-empty string"],
+    ["connectors", [], "non-empty array"],
+    ["connectors", ["crm", ""], "connectors[1] must be a non-empty string"]
+  ];
+
+  for (const [field, value, expected] of invalidValues) {
+    const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-metadata-"));
+    try {
+      await initBundle(directory, { name: "invalid-metadata" });
+      const metadata = {
+        name: "valid-name",
+        version: "0.1.0",
+        connectors: ["crm"],
+        [field]: value
+      };
+      await writeFile(path.join(directory, "bundle.json"), `${JSON.stringify(metadata, null, 2)}\n`);
+
+      const report = await lintBundle(directory);
+      assert.equal(report.ok, false);
+      assert.equal(
+        report.findings.some((item) =>
+          item.file === "bundle.json" && item.message.includes(expected)
+        ),
+        true
+      );
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+});
+
+test("rejects malformed request fields with entry-specific findings", async () => {
+  const invalidValues = [
+    ["id", 7, "id must be a non-empty string"],
+    ["connector", "", "connector must be a non-empty string"],
+    ["operation", null, "operation must be a non-empty string"],
+    ["method", {}, "method must be a non-empty string"],
+    ["path", [], "path must be a non-empty string"],
+    ["body", "not-an-object", "body must be an object"]
+  ];
+
+  for (const [field, value, expected] of invalidValues) {
+    const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-request-shape-"));
+    try {
+      await initBundle(directory, { name: "invalid-request" });
+      const request = {
+        id: "crm-create-note",
+        connector: "crm",
+        operation: "create_note",
+        method: "POST",
+        path: "/v1/notes",
+        body: {},
+        [field]: value
+      };
+      await writeFile(path.join(directory, "requests.json"), `${JSON.stringify([request], null, 2)}\n`);
+
+      const report = await lintBundle(directory);
+      assert.equal(report.ok, false);
+      assert.equal(
+        report.findings.some((item) =>
+          item.file === "requests.json" && item.message === `Entry 0 ${expected}.`
+        ),
+        true
+      );
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+});
+
+test("rejects malformed response fields with entry-specific findings", async () => {
+  const invalidValues = [
+    ["id", "", "id must be a non-empty string"],
+    ["requestId", 7, "requestId must be a non-empty string"],
+    ["status", "complete", "status must be one of: dry_run, mocked, blocked"],
+    ["body", null, "body must be an object"]
+  ];
+
+  for (const [field, value, expected] of invalidValues) {
+    const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-response-shape-"));
+    try {
+      await initBundle(directory, { name: "invalid-response" });
+      const response = {
+        id: "response-1",
+        requestId: "crm-create-note",
+        status: "dry_run",
+        body: {},
+        [field]: value
+      };
+      await writeFile(path.join(directory, "responses.json"), `${JSON.stringify([response], null, 2)}\n`);
+
+      const report = await lintBundle(directory);
+      assert.equal(report.ok, false);
+      assert.equal(
+        report.findings.some((item) =>
+          item.file === "responses.json" && item.message === `Entry 0 ${expected}.`
+        ),
+        true
+      );
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+});
+
 test("requires boolean true approval for write requests", async () => {
   for (const required of [false, "true", 1, null]) {
     const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-approval-"));

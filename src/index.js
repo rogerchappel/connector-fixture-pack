@@ -85,11 +85,13 @@ export async function renderReviewPack(directory) {
   ];
 
   for (const request of requests) {
+    if (!isObject(request)) continue;
     lines.push(`- \`${request.id}\` ${request.method} ${request.path} (${request.connector}:${request.operation})`);
   }
 
   lines.push("", "## Approval Prompts", "");
   for (const approval of approvals) {
+    if (!isObject(approval)) continue;
     lines.push(`- \`${approval.id}\` for \`${approval.requestId}\`: ${approval.prompt}`);
   }
 
@@ -258,8 +260,14 @@ function isObject(value) {
 function validateRequestReferences(requests, entries, file, findings) {
   if (!Array.isArray(requests) || !Array.isArray(entries)) return;
 
-  const requestIds = new Set(requests.map((request) => request.id).filter(Boolean));
+  const requestIds = new Set(
+    requests
+      .filter(isObject)
+      .map((request) => request.id)
+      .filter(Boolean)
+  );
   for (const entry of entries) {
+    if (!isObject(entry)) continue;
     if (entry.requestId && !requestIds.has(entry.requestId)) {
       findings.push(finding("error", file, `Unknown requestId ${entry.requestId}.`));
     }
@@ -269,9 +277,14 @@ function validateRequestReferences(requests, entries, file, findings) {
 function validateApprovalRequirements(requests, approvals, findings) {
   if (!Array.isArray(requests) || !Array.isArray(approvals)) return;
 
-  const requestsById = new Map(requests.map((request) => [request.id, request]));
+  const requestsById = new Map(
+    requests
+      .filter(isObject)
+      .map((request) => [request.id, request])
+  );
   const approvalRequestIds = new Set();
   for (const approval of approvals) {
+    if (!isObject(approval)) continue;
     const request = requestsById.get(approval.requestId);
     if (!request?.method || isSafeMethod(request.method)) continue;
     approvalRequestIds.add(approval.requestId);
@@ -286,6 +299,7 @@ function validateApprovalRequirements(requests, approvals, findings) {
   }
 
   for (const request of requests) {
+    if (!isObject(request)) continue;
     if (!request?.id || !request.method || isSafeMethod(request.method)) continue;
     if (!approvalRequestIds.has(request.id)) {
       findings.push(finding(

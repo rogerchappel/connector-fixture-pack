@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Report non-object request, response, and approval entries without aborting lint or review rendering.
 - Enforce the published bundle, request, and response value constraints during fixture linting.
 - Require every non-safe HTTP request to have an approval entry with `required: true`.
 - Validate response and approval `requestId` references during fixture linting.

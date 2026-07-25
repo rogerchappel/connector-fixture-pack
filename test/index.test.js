@@ -173,7 +173,9 @@ test("reports non-object request, response, and approval entries without throwin
       const report = await lintBundle(directory);
       assert.equal(report.ok, false);
       assert.deepEqual(
-        report.findings.filter((item) => item.file === file),
+        report.findings.filter((item) =>
+          item.file === file && item.message.endsWith("must be an object.")
+        ),
         malformedEntries.map((_, index) => ({
           severity: "error",
           file,

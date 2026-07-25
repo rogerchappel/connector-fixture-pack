@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -158,6 +158,78 @@ test("rejects malformed response fields with entry-specific findings", async () 
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
+  }
+});
+
+test("reports non-object request, response, and approval entries without throwing", async () => {
+  const malformedEntries = [null, "scalar", []];
+
+  for (const file of ["requests.json", "responses.json", "approvals.json"]) {
+    const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-non-object-"));
+    try {
+      await initBundle(directory, { name: "non-object-entries" });
+      await writeFile(path.join(directory, file), `${JSON.stringify(malformedEntries, null, 2)}\n`);
+
+      const report = await lintBundle(directory);
+      assert.equal(report.ok, false);
+      assert.deepEqual(
+        report.findings.filter((item) => item.file === file),
+        malformedEntries.map((_, index) => ({
+          severity: "error",
+          file,
+          message: `Entry ${index} must be an object.`
+        }))
+      );
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+});
+
+test("CLI lint and render preserve actionable findings for non-object entries", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-non-object-cli-"));
+  try {
+    await initBundle(directory, { name: "non-object-cli" });
+    await writeFile(
+      path.join(directory, "requests.json"),
+      `${JSON.stringify([null, "scalar", []], null, 2)}\n`
+    );
+
+    const lint = spawnSync(process.execPath, [
+      "bin/connector-fixture-pack.js",
+      "lint",
+      directory
+    ], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8"
+    });
+    assert.equal(lint.status, 1);
+    assert.equal(lint.stderr, "");
+    assert.deepEqual(
+      JSON.parse(lint.stdout).findings.filter((item) => item.file === "requests.json"),
+      [0, 1, 2].map((index) => ({
+        severity: "error",
+        file: "requests.json",
+        message: `Entry ${index} must be an object.`
+      }))
+    );
+
+    const render = spawnSync(process.execPath, [
+      "bin/connector-fixture-pack.js",
+      "render",
+      directory
+    ], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8"
+    });
+    assert.equal(render.status, 0);
+    assert.equal(render.stderr, "");
+    assert.match(render.stdout, /Lint status: fail/);
+    for (const index of [0, 1, 2]) {
+      assert.match(render.stdout, new RegExp(`ERROR requests\\.json: Entry ${index} must be an object\\.`));
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 });
 

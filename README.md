@@ -44,6 +44,11 @@ npm pack --dry-run
 - `connector-fixture-pack lint <dir>` validates bundle files and prints JSON.
 - `connector-fixture-pack render <dir>` emits a Markdown review pack.
 
+`init` creates all five required files only when none already exist. If the target
+contains any required fixture file, it exits nonzero, lists every conflict, and
+leaves the target unchanged. Remove or move the conflicting files before retrying;
+there is no implicit overwrite option.
+
 `lint` exits with status `1` when the bundle has release-blocking findings, which makes it safe to use in CI and pre-release scripts:
 
 ```sh

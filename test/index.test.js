@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -327,6 +327,63 @@ test("initializes a usable bundle", async () => {
     await initBundle(directory, { name: "tmp-bundle" });
     const report = await lintBundle(directory);
     assert.equal(report.ok, true);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("initializes all required files in an empty target", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-empty-"));
+  try {
+    const result = await initBundle(directory, { name: "empty-target" });
+    assert.deepEqual((await readdir(directory)).sort(), result.files.sort());
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("rejects a partially populated target without changing sibling files", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-partial-"));
+  const existing = path.join(directory, "bundle.json");
+  try {
+    await writeFile(existing, "custom bundle\n");
+    await assert.rejects(
+      initBundle(directory),
+      /existing required file\(s\): bundle\.json/
+    );
+    assert.equal(await readFile(existing, "utf8"), "custom bundle\n");
+    assert.deepEqual(await readdir(directory), ["bundle.json"]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("reports every conflict in a populated target", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-populated-"));
+  try {
+    await initBundle(directory);
+    await assert.rejects(
+      initBundle(directory),
+      /bundle\.json, requests\.json, responses\.json, approvals\.json, redactions\.json/
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI init exits nonzero and preserves a conflicting target", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-cli-conflict-"));
+  const existing = path.join(directory, "requests.json");
+  try {
+    await writeFile(existing, "custom requests\n");
+    const result = spawnSync(process.execPath, ["bin/connector-fixture-pack.js", "init", directory], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8"
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /existing required file\(s\): requests\.json/);
+    assert.equal(await readFile(existing, "utf8"), "custom requests\n");
+    assert.deepEqual(await readdir(directory), ["requests.json"]);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

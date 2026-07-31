@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const REQUIRED_FILES = [
@@ -25,8 +25,22 @@ export async function initBundle(directory, options = {}) {
   const name = options.name ?? path.basename(directory);
   const files = sampleBundle(name);
 
+  const conflicts = [];
+  for (const file of Object.keys(files)) {
+    try {
+      await access(path.join(directory, file));
+      conflicts.push(file);
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
+
+  if (conflicts.length > 0) {
+    throw new Error(`Cannot initialize bundle: existing required file(s): ${conflicts.join(", ")}.`);
+  }
+
   for (const [file, content] of Object.entries(files)) {
-    await writeJson(path.join(directory, file), content);
+    await writeJson(path.join(directory, file), content, { flag: "wx" });
   }
 
   return {
@@ -364,6 +378,6 @@ async function readJson(file) {
   return JSON.parse(await readFile(file, "utf8"));
 }
 
-async function writeJson(file, value) {
-  await writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
+async function writeJson(file, value, options) {
+  await writeFile(file, `${JSON.stringify(value, null, 2)}\n`, options);
 }

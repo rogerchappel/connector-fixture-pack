@@ -339,12 +339,27 @@ function validateRedactions(redactions, bundle, findings) {
     return;
   }
 
-  const paths = new Set(redactions.map((item) => item.path));
-  for (const item of redactions) {
-    if (!item.path || !item.reason) {
-      findings.push(finding("error", "redactions.json", "Each redaction needs path and reason."));
+  const paths = new Set();
+  redactions.forEach((item, index) => {
+    if (!isObject(item)) {
+      findings.push(finding("error", "redactions.json", `Entry ${index} must be an object.`));
+      return;
     }
-  }
+
+    for (const field of ["path", "reason"]) {
+      if (!(field in item)) {
+        findings.push(finding("error", "redactions.json", `Entry ${index} is missing ${field}.`));
+      } else if (!isNonEmptyString(item[field])) {
+        findings.push(finding(
+          "error",
+          "redactions.json",
+          `Entry ${index} ${field} must be a non-empty string.`
+        ));
+      }
+    }
+
+    if (isNonEmptyString(item.path)) paths.add(item.path);
+  });
 
   const serialized = JSON.stringify(bundle);
   if (serialized.includes("@") && ![...paths].some((item) => /owner|email|assignee|recipient|sender/i.test(item))) {

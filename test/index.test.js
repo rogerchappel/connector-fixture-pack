@@ -235,6 +235,83 @@ test("CLI lint and render preserve actionable findings for non-object entries", 
   }
 });
 
+test("rejects malformed redactions with entry-specific findings", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-redactions-"));
+  try {
+    await initBundle(directory, { name: "malformed-redactions" });
+    await writeFile(
+      path.join(directory, "redactions.json"),
+      `${JSON.stringify([
+        null,
+        [],
+        "scalar",
+        {},
+        { path: "$.requests[0].body.owner" },
+        { reason: "Personal data" },
+        { path: 7, reason: "Personal data" },
+        { path: "$.requests[0].body.owner", reason: false }
+      ], null, 2)}\n`
+    );
+
+    const report = await lintBundle(directory);
+    assert.equal(report.ok, false);
+    assert.deepEqual(
+      report.findings.filter((item) => item.file === "redactions.json" && item.severity === "error"),
+      [
+        "Entry 0 must be an object.",
+        "Entry 1 must be an object.",
+        "Entry 2 must be an object.",
+        "Entry 3 is missing path.",
+        "Entry 3 is missing reason.",
+        "Entry 4 is missing reason.",
+        "Entry 5 is missing path.",
+        "Entry 6 path must be a non-empty string.",
+        "Entry 7 reason must be a non-empty string."
+      ].map((message) => ({ severity: "error", file: "redactions.json", message }))
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI lint and render preserve malformed redaction findings", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-redactions-cli-"));
+  try {
+    await initBundle(directory, { name: "malformed-redactions-cli" });
+    await writeFile(
+      path.join(directory, "redactions.json"),
+      `${JSON.stringify([null, { path: [], reason: "Personal data" }], null, 2)}\n`
+    );
+
+    const lint = spawnSync(process.execPath, ["bin/connector-fixture-pack.js", "lint", directory], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8"
+    });
+    assert.equal(lint.status, 1);
+    assert.equal(lint.stderr, "");
+    assert.deepEqual(
+      JSON.parse(lint.stdout).findings.filter((item) => item.file === "redactions.json"),
+      [
+        { severity: "error", file: "redactions.json", message: "Entry 0 must be an object." },
+        { severity: "error", file: "redactions.json", message: "Entry 1 path must be a non-empty string." },
+        { severity: "warning", file: "redactions.json", message: "Email-like fixture data should be covered by a redaction path." }
+      ]
+    );
+
+    const render = spawnSync(process.execPath, ["bin/connector-fixture-pack.js", "render", directory], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8"
+    });
+    assert.equal(render.status, 0);
+    assert.equal(render.stderr, "");
+    assert.match(render.stdout, /Lint status: fail/);
+    assert.match(render.stdout, /ERROR redactions\.json: Entry 0 must be an object\./);
+    assert.match(render.stdout, /ERROR redactions\.json: Entry 1 path must be a non-empty string\./);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("requires boolean true approval for write requests", async () => {
   for (const required of [false, "true", 1, null]) {
     const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-approval-"));

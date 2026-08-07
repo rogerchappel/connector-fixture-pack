@@ -83,15 +83,24 @@ export async function lintBundle(directory) {
 
 export async function renderReviewPack(directory) {
   const report = await lintBundle(directory);
-  const metadata = report.bundle["bundle.json"] ?? {};
-  const requests = report.bundle["requests.json"] ?? [];
-  const approvals = report.bundle["approvals.json"] ?? [];
+  const metadata = isObject(report.bundle["bundle.json"])
+    ? report.bundle["bundle.json"]
+    : {};
+  const requests = Array.isArray(report.bundle["requests.json"])
+    ? report.bundle["requests.json"]
+    : [];
+  const approvals = Array.isArray(report.bundle["approvals.json"])
+    ? report.bundle["approvals.json"]
+    : [];
+  const connectors = Array.isArray(metadata.connectors)
+    ? metadata.connectors.filter(isNonEmptyString)
+    : [];
 
   const lines = [
-    `# Connector Fixture Review: ${metadata.name ?? path.basename(directory)}`,
+    `# Connector Fixture Review: ${isNonEmptyString(metadata.name) ? metadata.name : path.basename(directory)}`,
     "",
-    `- Version: ${metadata.version ?? "unknown"}`,
-    `- Connectors: ${(metadata.connectors ?? []).join(", ") || "none"}`,
+    `- Version: ${isNonEmptyString(metadata.version) ? metadata.version : "unknown"}`,
+    `- Connectors: ${connectors.join(", ") || "none"}`,
     `- Lint status: ${report.ok ? "pass" : "fail"}`,
     "",
     "## Requests",
@@ -100,13 +109,13 @@ export async function renderReviewPack(directory) {
 
   for (const request of requests) {
     if (!isObject(request)) continue;
-    lines.push(`- \`${request.id}\` ${request.method} ${request.path} (${request.connector}:${request.operation})`);
+    lines.push(`- \`${displayString(request.id)}\` ${displayString(request.method)} ${displayString(request.path)} (${displayString(request.connector)}:${displayString(request.operation)})`);
   }
 
   lines.push("", "## Approval Prompts", "");
   for (const approval of approvals) {
     if (!isObject(approval)) continue;
-    lines.push(`- \`${approval.id}\` for \`${approval.requestId}\`: ${approval.prompt}`);
+    lines.push(`- \`${displayString(approval.id)}\` for \`${displayString(approval.requestId)}\`: ${displayString(approval.prompt)}`);
   }
 
   lines.push("", "## Findings", "");
@@ -174,6 +183,10 @@ export function sampleBundle(name = "sample-connector-fixture") {
 }
 
 function validateBundleMetadata(metadata, findings) {
+  if (!isObject(metadata)) {
+    findings.push(finding("error", "bundle.json", "Expected an object."));
+    return;
+  }
   if (!isNonEmptyString(metadata.name)) {
     findings.push(finding("error", "bundle.json", "name must be a non-empty string."));
   }
@@ -269,6 +282,10 @@ function isNonEmptyString(value) {
 
 function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function displayString(value) {
+  return isNonEmptyString(value) ? value : "unknown";
 }
 
 function validateRequestReferences(requests, entries, file, findings) {

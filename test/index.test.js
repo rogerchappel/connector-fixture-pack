@@ -87,6 +87,91 @@ test("rejects malformed bundle metadata with field-specific findings", async () 
   }
 });
 
+test("reports non-object bundle metadata without throwing", async () => {
+  for (const metadata of [null, [], "metadata"]) {
+    const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-metadata-shape-"));
+    try {
+      await initBundle(directory, { name: "invalid-metadata-shape" });
+      await writeFile(path.join(directory, "bundle.json"), `${JSON.stringify(metadata)}\n`);
+
+      const report = await lintBundle(directory);
+      assert.equal(report.ok, false);
+      assert.deepEqual(report.findings[0], {
+        severity: "error",
+        file: "bundle.json",
+        message: "Expected an object."
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+});
+
+test("renders invalid collection shapes with all lint findings", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-render-shapes-"));
+  try {
+    await initBundle(directory, { name: "invalid-render-shapes" });
+    await writeFile(path.join(directory, "bundle.json"), `${JSON.stringify({
+      name: "invalid-render-shapes",
+      version: "0.1.0",
+      connectors: {}
+    })}\n`);
+    await writeFile(path.join(directory, "requests.json"), "{}\n");
+    await writeFile(path.join(directory, "approvals.json"), "null\n");
+
+    const report = await lintBundle(directory);
+    const markdown = await renderReviewPack(directory);
+    assert.equal(report.ok, false);
+    assert.match(markdown, /Lint status: fail/);
+    assert.match(markdown, /Connectors: none/);
+    for (const item of report.findings) {
+      assert.ok(markdown.includes(`${item.severity.toUpperCase()} ${item.file}: ${item.message}`));
+    }
+    assert.doesNotMatch(markdown, /\[object Object\]/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI lint and render handle non-object metadata and invalid collection shapes", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-cli-shapes-"));
+  try {
+    await initBundle(directory, { name: "invalid-cli-shapes" });
+    await writeFile(path.join(directory, "bundle.json"), "null\n");
+    await writeFile(path.join(directory, "requests.json"), "{}\n");
+    await writeFile(path.join(directory, "approvals.json"), "{}\n");
+
+    const lint = spawnSync(process.execPath, ["bin/connector-fixture-pack.js", "lint", directory], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8"
+    });
+    assert.equal(lint.status, 1);
+    assert.equal(lint.stderr, "");
+    const lintResult = JSON.parse(lint.stdout);
+    assert.deepEqual(lintResult.findings.filter((item) =>
+      ["bundle.json", "requests.json", "approvals.json"].includes(item.file)
+    ), [
+      { severity: "error", file: "bundle.json", message: "Expected an object." },
+      { severity: "error", file: "requests.json", message: "Expected an array." },
+      { severity: "error", file: "approvals.json", message: "Expected an array." }
+    ]);
+
+    const render = spawnSync(process.execPath, ["bin/connector-fixture-pack.js", "render", directory], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8"
+    });
+    assert.equal(render.status, 0);
+    assert.equal(render.stderr, "");
+    assert.match(render.stdout, /Lint status: fail/);
+    for (const item of lintResult.findings) {
+      assert.ok(render.stdout.includes(`${item.severity.toUpperCase()} ${item.file}: ${item.message}`));
+    }
+    assert.doesNotMatch(render.stdout, /\[object Object\]|TypeError/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("rejects malformed request fields with entry-specific findings", async () => {
   const invalidValues = [
     ["id", 7, "id must be a non-empty string"],

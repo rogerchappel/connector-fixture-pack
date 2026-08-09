@@ -44,12 +44,19 @@ npm pack --dry-run
 - `connector-fixture-pack lint <dir>` validates bundle files and prints JSON.
 - `connector-fixture-pack render <dir>` emits a Markdown review pack.
 
+Each command accepts exactly one directory argument and no options. Use `--help`
+or `-h` by itself to print usage. Extra targets, unknown options, combined help
+arguments, unknown commands, and missing directories print concise usage to
+standard error and exit nonzero before reading or writing fixture files.
+
 `init` creates all five required files only when none already exist. If the target
 contains any required fixture file, it exits nonzero, lists every conflict, and
 leaves the target unchanged. Remove or move the conflicting files before retrying;
 there is no implicit overwrite option.
 
-`lint` exits with status `1` when the bundle has release-blocking findings, which makes it safe to use in CI and pre-release scripts:
+`lint` exits with status `1` when the bundle has release-blocking findings. All
+commands also exit nonzero for invalid CLI arguments or filesystem/runtime
+errors, which makes them safe to use in CI and pre-release scripts:
 
 ```sh
 node bin/connector-fixture-pack.js lint fixtures/crm-basic

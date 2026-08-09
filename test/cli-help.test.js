@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -11,6 +11,77 @@ test('CLI help entrypoint prints usage', () => {
   assert.match(result.stdout, /Usage:/);
   assert.match(result.stdout, /connector-fixture-pack lint <dir>/);
   assert.equal(result.stderr, '');
+});
+
+test('CLI help must be the only argument', () => {
+  for (const help of ['--help', '-h']) {
+    const result = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', help, 'fixtures/crm-basic'], {
+      encoding: 'utf8'
+    });
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /Help must be used without other arguments\./);
+    assert.match(result.stderr, /Usage:/);
+  }
+});
+
+test('CLI commands reject extra target arguments', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'connector-fixture-pack-cli-argv-'));
+  try {
+    for (const command of ['init', 'lint', 'render']) {
+      const target = path.join(root, command);
+      const result = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', command, target, 'ignored-target'], {
+        encoding: 'utf8'
+      });
+      assert.equal(result.status, 1);
+      assert.equal(result.stdout, '');
+      assert.match(result.stderr, /Unexpected argument: ignored-target/);
+      assert.match(result.stderr, /Usage:/);
+      await assert.rejects(access(target));
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('CLI commands reject trailing unknown options', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'connector-fixture-pack-cli-option-'));
+  try {
+    for (const command of ['init', 'lint', 'render']) {
+      const target = path.join(root, command);
+      const result = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', command, target, '--unknown'], {
+        encoding: 'utf8'
+      });
+      assert.equal(result.status, 1);
+      assert.equal(result.stdout, '');
+      assert.match(result.stderr, /Unknown option: --unknown/);
+      assert.match(result.stderr, /Usage:/);
+      await assert.rejects(access(target));
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('CLI accepts each documented command form', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'connector-fixture-pack-cli-valid-'));
+  try {
+    const target = path.join(root, 'bundle');
+    const init = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', 'init', target], { encoding: 'utf8' });
+    assert.equal(init.status, 0);
+    assert.equal(init.stderr, '');
+
+    const lint = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', 'lint', target], { encoding: 'utf8' });
+    assert.equal(lint.status, 0);
+    assert.equal(lint.stderr, '');
+
+    const render = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', 'render', target], { encoding: 'utf8' });
+    assert.equal(render.status, 0);
+    assert.equal(render.stderr, '');
+    assert.match(render.stdout, /Connector Fixture Review/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test('CLI lint exits non-zero for unsafe fixture bundles', () => {

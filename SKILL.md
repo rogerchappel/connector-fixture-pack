@@ -26,6 +26,11 @@ connector-fixture-pack lint fixtures/new-crm-case
 connector-fixture-pack render fixtures/new-crm-case > REVIEW_PACK.md
 ```
 
+Pass exactly one directory to `init`, `lint`, or `render`; the CLI does not
+accept additional targets or options. Run `connector-fixture-pack --help` (or
+`-h`) as a standalone argument for usage. Invalid argument forms exit nonzero
+before fixture files are read or written.
+
 ## Validation Workflow
 
 Run `npm test`, `npm run check`, and `npm run smoke`. Review lint findings and confirm every secret-like placeholder is covered by `redactions.json`.

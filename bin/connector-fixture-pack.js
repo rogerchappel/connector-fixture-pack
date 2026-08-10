@@ -58,7 +58,9 @@ async function main() {
   }
 
   if (command === "render") {
+    const report = await lintBundle(target);
     process.stdout.write(await renderReviewPack(target));
+    if (!report.ok) process.exitCode = 1;
     return;
   }
 }

@@ -141,7 +141,7 @@ test('CLI lint exits non-zero for a request using an undeclared connector', asyn
   }
 });
 
-test('CLI lint and render expose missing write approvals', async () => {
+test('CLI lint and render fail while exposing missing write approvals', async () => {
   const directory = await mkdtemp(path.join(tmpdir(), 'connector-fixture-pack-cli-approval-'));
   try {
     await cp('fixtures/crm-basic', directory, { recursive: true });
@@ -158,11 +158,25 @@ test('CLI lint and render expose missing write approvals', async () => {
     const render = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', 'render', directory], {
       encoding: 'utf8'
     });
-    assert.equal(render.status, 0);
+    assert.equal(render.status, 1);
     assert.match(render.stdout, /Lint status: fail/);
     assert.match(render.stdout, /ERROR approvals\.json: POST request crm-create-note requires an approval/);
     assert.equal(render.stderr, '');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('CLI render emits a complete review before failing for unsafe bundles', () => {
+  const result = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', 'render', 'fixtures/messaging-risky'], {
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /^# Connector Fixture Review:/);
+  assert.match(result.stdout, /Lint status: fail/);
+  assert.match(result.stdout, /## Findings/);
+  assert.match(result.stdout, /ERROR .*Secret-like value/);
+  assert.match(result.stdout, /\n$/);
+  assert.equal(result.stderr, '');
 });

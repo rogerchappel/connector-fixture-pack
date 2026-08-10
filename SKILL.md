@@ -31,6 +31,11 @@ accept additional targets or options. Run `connector-fixture-pack --help` (or
 `-h`) as a standalone argument for usage. Invalid argument forms exit nonzero
 before fixture files are read or written.
 
+`render` always writes the complete Markdown review pack. It exits with status
+`1` after rendering when the bundle has any error finding, and status `0` for a
+valid bundle. Treat a nonzero render status as a release-blocking result without
+discarding the generated review output.
+
 ## Validation Workflow
 
 Run `npm test`, `npm run check`, and `npm run smoke`. Review lint findings and confirm every secret-like placeholder is covered by `redactions.json`.

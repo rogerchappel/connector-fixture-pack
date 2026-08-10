@@ -54,9 +54,11 @@ contains any required fixture file, it exits nonzero, lists every conflict, and
 leaves the target unchanged. Remove or move the conflicting files before retrying;
 there is no implicit overwrite option.
 
-`lint` exits with status `1` when the bundle has release-blocking findings. All
-commands also exit nonzero for invalid CLI arguments or filesystem/runtime
-errors, which makes them safe to use in CI and pre-release scripts:
+`lint` exits with status `1` when the bundle has release-blocking findings.
+`render` still emits the complete Markdown review, including every finding, then
+exits with status `1` when those findings include an error. A valid bundle exits
+with status `0`. All commands also exit nonzero for invalid CLI arguments or
+filesystem/runtime errors, which makes them safe to use in CI and pre-release scripts:
 
 ```sh
 node bin/connector-fixture-pack.js lint fixtures/crm-basic

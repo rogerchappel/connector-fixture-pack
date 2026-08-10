@@ -180,3 +180,48 @@ test('CLI render emits a complete review before failing for unsafe bundles', () 
   assert.match(result.stdout, /\n$/);
   assert.equal(result.stderr, '');
 });
+
+test('CLI lint and render expose malformed read-only approval metadata', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'connector-fixture-pack-cli-approval-shape-'));
+  try {
+    await cp('fixtures/crm-basic', directory, { recursive: true });
+    const requests = JSON.parse(await readFile(path.join(directory, 'requests.json'), 'utf8'));
+    requests[0].method = 'OPTIONS';
+    await writeFile(path.join(directory, 'requests.json'), `${JSON.stringify(requests, null, 2)}\n`);
+    await writeFile(
+      path.join(directory, 'approvals.json'),
+      `${JSON.stringify([{
+        id: { invalid: true },
+        requestId: 'crm-create-note',
+        prompt: null,
+        required: 'yes'
+      }], null, 2)}\n`
+    );
+
+    const lint = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', 'lint', directory], {
+      encoding: 'utf8'
+    });
+    assert.equal(lint.status, 1);
+    assert.equal(lint.stderr, '');
+    const report = JSON.parse(lint.stdout);
+    assert.equal(report.ok, false);
+    assert.deepEqual(report.findings.filter((item) => item.file === 'approvals.json'), [
+      { severity: 'error', file: 'approvals.json', message: 'Entry 0 id must be a non-empty string.' },
+      { severity: 'error', file: 'approvals.json', message: 'Entry 0 prompt must be a non-empty string.' },
+      { severity: 'error', file: 'approvals.json', message: 'Entry 0 required must be a boolean.' }
+    ]);
+
+    const render = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', 'render', directory], {
+      encoding: 'utf8'
+    });
+    assert.equal(render.status, 0);
+    assert.equal(render.stderr, '');
+    assert.match(render.stdout, /Lint status: fail/);
+    for (const item of report.findings) {
+      assert.ok(render.stdout.includes(`${item.severity.toUpperCase()} ${item.file}: ${item.message}`));
+    }
+    assert.doesNotMatch(render.stdout, /No findings\./);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

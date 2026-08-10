@@ -73,6 +73,7 @@ export async function lintBundle(directory) {
   validateEntries("responses.json", bundle["responses.json"], findings, ["id", "requestId", "status", "body"]);
   validateResponseShape(bundle["responses.json"], findings);
   validateEntries("approvals.json", bundle["approvals.json"], findings, ["id", "requestId", "prompt", "required"]);
+  validateApprovalShape(bundle["approvals.json"], findings);
   validateRequestReferences(bundle["requests.json"], bundle["responses.json"], "responses.json", findings);
   validateRequestReferences(bundle["requests.json"], bundle["approvals.json"], "approvals.json", findings);
   validateApprovalRequirements(bundle["requests.json"], bundle["approvals.json"], findings);
@@ -278,6 +279,24 @@ function validateResponseShape(responses, findings) {
       ));
     }
     validateObjectField("responses.json", response, index, "body", findings);
+  });
+}
+
+function validateApprovalShape(approvals, findings) {
+  if (!Array.isArray(approvals)) return;
+
+  approvals.forEach((approval, index) => {
+    if (!isObject(approval)) return;
+    for (const field of ["id", "requestId", "prompt"]) {
+      validateNonEmptyString("approvals.json", approval, index, field, findings);
+    }
+    if ("required" in approval && typeof approval.required !== "boolean") {
+      findings.push(finding(
+        "error",
+        "approvals.json",
+        `Entry ${index} required must be a boolean.`
+      ));
+    }
   });
 }
 

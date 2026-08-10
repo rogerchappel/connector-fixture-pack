@@ -523,6 +523,92 @@ test("requires boolean true approval for write requests", async () => {
   }
 });
 
+test("rejects malformed approval fields even for read-only requests", async () => {
+  const invalidValues = [
+    ["id", {}, "id must be a non-empty string"],
+    ["id", "  ", "id must be a non-empty string"],
+    ["requestId", null, "requestId must be a non-empty string"],
+    ["requestId", 7, "requestId must be a non-empty string"],
+    ["prompt", {}, "prompt must be a non-empty string"],
+    ["prompt", "", "prompt must be a non-empty string"],
+    ["required", "yes", "required must be a boolean"],
+    ["required", null, "required must be a boolean"],
+    ["required", 1, "required must be a boolean"]
+  ];
+
+  for (const [field, value, expected] of invalidValues) {
+    const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-approval-shape-"));
+    try {
+      await initBundle(directory, { name: "invalid-approval-shape" });
+      await writeFile(
+        path.join(directory, "requests.json"),
+        `${JSON.stringify([{
+          id: "crm-list-contacts",
+          connector: "crm",
+          operation: "list_contacts",
+          method: "GET",
+          path: "/v1/contacts",
+          body: {}
+        }], null, 2)}\n`
+      );
+      await writeFile(path.join(directory, "responses.json"), "[]\n");
+      await writeFile(
+        path.join(directory, "approvals.json"),
+        `${JSON.stringify([{
+          id: "approval-list-contacts",
+          requestId: "crm-list-contacts",
+          prompt: "Approve listing contacts?",
+          required: false,
+          [field]: value
+        }], null, 2)}\n`
+      );
+
+      const report = await lintBundle(directory);
+      assert.equal(report.ok, false);
+      assert.equal(report.findings.some((item) =>
+        item.file === "approvals.json"
+        && item.message === `Entry 0 ${expected}.`
+      ), true);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+});
+
+test("accepts well-shaped optional approvals for read-only requests", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-read-approval-"));
+  try {
+    await initBundle(directory, { name: "read-approval" });
+    await writeFile(
+      path.join(directory, "requests.json"),
+      `${JSON.stringify([{
+        id: "crm-list-contacts",
+        connector: "crm",
+        operation: "list_contacts",
+        method: "HEAD",
+        path: "/v1/contacts",
+        body: {}
+      }], null, 2)}\n`
+    );
+    await writeFile(path.join(directory, "responses.json"), "[]\n");
+    await writeFile(
+      path.join(directory, "approvals.json"),
+      `${JSON.stringify([{
+        id: "approval-list-contacts",
+        requestId: "crm-list-contacts",
+        prompt: "Approve checking contacts?",
+        required: false
+      }], null, 2)}\n`
+    );
+
+    const report = await lintBundle(directory);
+    assert.equal(report.ok, true);
+    assert.deepEqual(report.findings, []);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("requires an approval entry for every write request", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-missing-approval-"));
   try {

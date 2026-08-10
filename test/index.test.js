@@ -160,7 +160,7 @@ test("CLI lint and render handle non-object metadata and invalid collection shap
       cwd: new URL("..", import.meta.url),
       encoding: "utf8"
     });
-    assert.equal(render.status, 0);
+    assert.equal(render.status, 1);
     assert.equal(render.stderr, "");
     assert.match(render.stdout, /Lint status: fail/);
     for (const item of lintResult.findings) {
@@ -413,7 +413,7 @@ test("CLI lint and render preserve actionable findings for non-object entries", 
       cwd: new URL("..", import.meta.url),
       encoding: "utf8"
     });
-    assert.equal(render.status, 0);
+    assert.equal(render.status, 1);
     assert.equal(render.stderr, "");
     assert.match(render.stdout, /Lint status: fail/);
     for (const index of [0, 1, 2]) {
@@ -491,7 +491,7 @@ test("CLI lint and render preserve malformed redaction findings", async () => {
       cwd: new URL("..", import.meta.url),
       encoding: "utf8"
     });
-    assert.equal(render.status, 0);
+    assert.equal(render.status, 1);
     assert.equal(render.stderr, "");
     assert.match(render.stdout, /Lint status: fail/);
     assert.match(render.stdout, /ERROR redactions\.json: Entry 0 must be an object\./);

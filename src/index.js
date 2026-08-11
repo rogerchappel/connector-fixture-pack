@@ -69,6 +69,7 @@ export async function lintBundle(directory) {
   validateBundleMetadata(bundle["bundle.json"], findings);
   validateEntries("requests.json", bundle["requests.json"], findings, ["id", "connector", "operation", "method", "path", "body"]);
   validateRequestShape(bundle["requests.json"], findings);
+  validateRequestConnectors(bundle["bundle.json"], bundle["requests.json"], findings);
   validateEntries("responses.json", bundle["responses.json"], findings, ["id", "requestId", "status", "body"]);
   validateResponseShape(bundle["responses.json"], findings);
   validateEntries("approvals.json", bundle["approvals.json"], findings, ["id", "requestId", "prompt", "required"]);
@@ -242,6 +243,22 @@ function validateRequestShape(requests, findings) {
       validateNonEmptyString("requests.json", request, index, field, findings);
     }
     validateObjectField("requests.json", request, index, "body", findings);
+  });
+}
+
+function validateRequestConnectors(metadata, requests, findings) {
+  if (!isObject(metadata) || !Array.isArray(metadata.connectors) || !Array.isArray(requests)) return;
+
+  const declaredConnectors = new Set(metadata.connectors.filter(isNonEmptyString));
+  requests.forEach((request, index) => {
+    if (!isObject(request) || !isNonEmptyString(request.connector)) return;
+    if (!declaredConnectors.has(request.connector)) {
+      findings.push(finding(
+        "error",
+        "requests.json",
+        `Entry ${index} connector ${request.connector} is not declared in bundle.json connectors.`
+      ));
+    }
   });
 }
 

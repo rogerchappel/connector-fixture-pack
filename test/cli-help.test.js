@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { access, cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -116,6 +116,25 @@ test('CLI lint exits non-zero for schema-invalid fixture values', async () => {
     assert.match(result.stdout, /"ok": false/);
     assert.match(result.stdout, /Entry 0 status must be one of: dry_run, mocked, blocked/);
     assert.match(result.stdout, /Entry 0 body must be an object/);
+    assert.equal(result.stderr, '');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('CLI lint exits non-zero for a request using an undeclared connector', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'connector-fixture-pack-cli-connector-'));
+  try {
+    await cp('fixtures/crm-basic', directory, { recursive: true });
+    const requests = JSON.parse(await readFile(path.join(directory, 'requests.json'), 'utf8'));
+    requests[0].connector = 'helpdesk';
+    await writeFile(path.join(directory, 'requests.json'), `${JSON.stringify(requests, null, 2)}\n`);
+
+    const result = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', 'lint', directory], {
+      encoding: 'utf8'
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /Entry 0 connector helpdesk is not declared in bundle\.json connectors/);
     assert.equal(result.stderr, '');
   } finally {
     await rm(directory, { recursive: true, force: true });

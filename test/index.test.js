@@ -211,6 +211,110 @@ test("rejects malformed request fields with entry-specific findings", async () =
   }
 });
 
+test("rejects every request whose connector is not declared by the bundle", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-connectors-"));
+  try {
+    await initBundle(directory, { name: "undeclared-connectors" });
+    const requests = [
+      {
+        id: "helpdesk-create-ticket",
+        connector: "helpdesk",
+        operation: "create_ticket",
+        method: "GET",
+        path: "/v1/tickets",
+        body: {}
+      },
+      {
+        id: "messaging-list-channels",
+        connector: "messaging",
+        operation: "list_channels",
+        method: "GET",
+        path: "/v1/channels",
+        body: {}
+      }
+    ];
+    await writeFile(path.join(directory, "requests.json"), `${JSON.stringify(requests, null, 2)}\n`);
+
+    const report = await lintBundle(directory);
+    assert.equal(report.ok, false);
+    assert.deepEqual(
+      report.findings.filter((item) => item.message.includes("is not declared")),
+      [
+        {
+          severity: "error",
+          file: "requests.json",
+          message: "Entry 0 connector helpdesk is not declared in bundle.json connectors."
+        },
+        {
+          severity: "error",
+          file: "requests.json",
+          message: "Entry 1 connector messaging is not declared in bundle.json connectors."
+        }
+      ]
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("accepts requests for multiple declared connectors", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-multi-connectors-"));
+  try {
+    await initBundle(directory, { name: "multiple-connectors" });
+    const metadata = JSON.parse(await readFile(path.join(directory, "bundle.json"), "utf8"));
+    metadata.connectors = ["crm", "helpdesk"];
+    await writeFile(path.join(directory, "bundle.json"), `${JSON.stringify(metadata, null, 2)}\n`);
+    const requests = JSON.parse(await readFile(path.join(directory, "requests.json"), "utf8"));
+    requests.push({
+      id: "helpdesk-list-tickets",
+      connector: "helpdesk",
+      operation: "list_tickets",
+      method: "GET",
+      path: "/v1/tickets",
+      body: {}
+    });
+    await writeFile(path.join(directory, "requests.json"), `${JSON.stringify(requests, null, 2)}\n`);
+
+    const report = await lintBundle(directory);
+    assert.equal(report.ok, true);
+    assert.deepEqual(report.findings, []);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("does not duplicate connector findings for malformed inputs", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-malformed-connectors-"));
+  try {
+    await initBundle(directory, { name: "malformed-connectors" });
+    const metadata = JSON.parse(await readFile(path.join(directory, "bundle.json"), "utf8"));
+    metadata.connectors = ["crm", ""];
+    await writeFile(path.join(directory, "bundle.json"), `${JSON.stringify(metadata, null, 2)}\n`);
+    const requests = JSON.parse(await readFile(path.join(directory, "requests.json"), "utf8"));
+    requests[0].connector = "";
+    await writeFile(path.join(directory, "requests.json"), `${JSON.stringify(requests, null, 2)}\n`);
+
+    const report = await lintBundle(directory);
+    assert.deepEqual(
+      report.findings.filter((item) => item.message.includes("connector")),
+      [
+        {
+          severity: "error",
+          file: "bundle.json",
+          message: "connectors[1] must be a non-empty string."
+        },
+        {
+          severity: "error",
+          file: "requests.json",
+          message: "Entry 0 connector must be a non-empty string."
+        }
+      ]
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("rejects malformed response fields with entry-specific findings", async () => {
   const invalidValues = [
     ["id", "", "id must be a non-empty string"],

@@ -214,7 +214,7 @@ test('CLI lint and render expose malformed read-only approval metadata', async (
     const render = spawnSync(process.execPath, ['./bin/connector-fixture-pack.js', 'render', directory], {
       encoding: 'utf8'
     });
-    assert.equal(render.status, 0);
+    assert.equal(render.status, 1);
     assert.equal(render.stderr, '');
     assert.match(render.stdout, /Lint status: fail/);
     for (const item of report.findings) {

@@ -99,10 +99,10 @@ export async function renderReviewPack(directory) {
     : [];
 
   const lines = [
-    `# Connector Fixture Review: ${isNonEmptyString(metadata.name) ? metadata.name : path.basename(directory)}`,
+    `# Connector Fixture Review: ${markdownText(isNonEmptyString(metadata.name) ? metadata.name : path.basename(directory))}`,
     "",
-    `- Version: ${isNonEmptyString(metadata.version) ? metadata.version : "unknown"}`,
-    `- Connectors: ${connectors.join(", ") || "none"}`,
+    `- Version: ${markdownText(isNonEmptyString(metadata.version) ? metadata.version : "unknown")}`,
+    `- Connectors: ${connectors.map(markdownText).join(", ") || "none"}`,
     `- Lint status: ${report.ok ? "pass" : "fail"}`,
     "",
     "## Requests",
@@ -111,13 +111,13 @@ export async function renderReviewPack(directory) {
 
   for (const request of requests) {
     if (!isObject(request)) continue;
-    lines.push(`- \`${displayString(request.id)}\` ${displayString(request.method)} ${displayString(request.path)} (${displayString(request.connector)}:${displayString(request.operation)})`);
+    lines.push(`- ${markdownCode(displayString(request.id))} ${markdownText(displayString(request.method))} ${markdownText(displayString(request.path))} (${markdownText(displayString(request.connector))}:${markdownText(displayString(request.operation))})`);
   }
 
   lines.push("", "## Approval Prompts", "");
   for (const approval of approvals) {
     if (!isObject(approval)) continue;
-    lines.push(`- \`${displayString(approval.id)}\` for \`${displayString(approval.requestId)}\`: ${displayString(approval.prompt)}`);
+    lines.push(`- ${markdownCode(displayString(approval.id))} for ${markdownCode(displayString(approval.requestId))}: ${markdownText(displayString(approval.prompt))}`);
   }
 
   lines.push("", "## Findings", "");
@@ -125,7 +125,7 @@ export async function renderReviewPack(directory) {
     lines.push("- No findings.");
   } else {
     for (const item of report.findings) {
-      lines.push(`- ${item.severity.toUpperCase()} ${item.file}: ${item.message}`);
+      lines.push(`- ${markdownText(item.severity.toUpperCase())} ${markdownText(item.file)}: ${markdownText(item.message)}`);
     }
   }
 
@@ -322,6 +322,22 @@ function isObject(value) {
 
 function displayString(value) {
   return isNonEmptyString(value) ? value : "unknown";
+}
+
+function markdownText(value) {
+  return normalizeReviewText(value).replace(/[\\`*_\[\]<>#|]/g, "\\$&");
+}
+
+function markdownCode(value) {
+  const content = normalizeReviewText(value);
+  const longestRun = Math.max(0, ...[...content.matchAll(/`+/g)].map((match) => match[0].length));
+  const fence = "`".repeat(longestRun + 1);
+  const padding = content.startsWith("`") || content.endsWith("`") ? " " : "";
+  return `${fence}${padding}${content}${padding}${fence}`;
+}
+
+function normalizeReviewText(value) {
+  return String(value).replace(/\s+/gu, " ").trim();
 }
 
 function validateRequestReferences(requests, entries, file, findings) {

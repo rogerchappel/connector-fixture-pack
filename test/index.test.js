@@ -20,6 +20,81 @@ test("renders a deterministic review pack", async () => {
   assert.match(markdown, /Lint status: pass/);
 });
 
+test("renders fixture-controlled text without creating Markdown structure", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-markdown-"));
+  try {
+    await initBundle(directory, { name: "Quarterly\n\n## Unintended `section`" });
+    const metadata = JSON.parse(await readFile(path.join(directory, "bundle.json"), "utf8"));
+    metadata.version = "0.1.0\n- injected item";
+    metadata.connectors = ["crm", "ops | urgent"];
+    await writeFile(path.join(directory, "bundle.json"), `${JSON.stringify(metadata, null, 2)}\n`);
+
+    const requests = JSON.parse(await readFile(path.join(directory, "requests.json"), "utf8"));
+    Object.assign(requests[0], {
+      id: "crm-`create`-note",
+      connector: "crm",
+      operation: "create_[note]",
+      method: "POST\n## Request heading",
+      path: "/notes/*\n- request item"
+    });
+    await writeFile(path.join(directory, "requests.json"), `${JSON.stringify(requests, null, 2)}\n`);
+
+    const approvals = JSON.parse(await readFile(path.join(directory, "approvals.json"), "utf8"));
+    Object.assign(approvals[0], {
+      id: "approval-`one`",
+      requestId: "crm-`create`-note",
+      prompt: "Approve [Q3]?\n\n## Approval heading\n```js\nalert()\n```"
+    });
+    await writeFile(path.join(directory, "approvals.json"), `${JSON.stringify(approvals, null, 2)}\n`);
+
+    const markdown = await renderReviewPack(directory);
+    assert.deepEqual(markdown.match(/^#{1,6} .*$/gm), [
+      "# Connector Fixture Review: Quarterly \\#\\# Unintended \\`section\\`",
+      "## Requests",
+      "## Approval Prompts",
+      "## Findings"
+    ]);
+    assert.equal((markdown.match(/^```/gm) ?? []).length, 0);
+    assert.ok(markdown.includes("Quarterly \\#\\# Unintended \\`section\\`"));
+    assert.ok(markdown.includes("Version: 0.1.0 - injected item"));
+    assert.ok(markdown.includes("Connectors: crm, ops \\| urgent"));
+    assert.ok(markdown.includes("``crm-`create`-note``"));
+    assert.ok(markdown.includes("Approve \\[Q3\\]? \\#\\# Approval heading \\`\\`\\`js alert() \\`\\`\\`"));
+    assert.match(markdown, /Lint status: fail/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI render normalizes Markdown while retaining an invalid bundle exit", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-cli-markdown-"));
+  try {
+    await initBundle(directory, { name: "CLI\n## Injected heading" });
+    const approvals = JSON.parse(await readFile(path.join(directory, "approvals.json"), "utf8"));
+    approvals[0].prompt = "Approve?\n- injected item";
+    approvals[0].required = "yes";
+    await writeFile(path.join(directory, "approvals.json"), `${JSON.stringify(approvals, null, 2)}\n`);
+
+    const render = spawnSync(process.execPath, ["bin/connector-fixture-pack.js", "render", directory], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8"
+    });
+    assert.equal(render.status, 1);
+    assert.equal(render.stderr, "");
+    assert.ok(render.stdout.includes("Connector Fixture Review: CLI \\#\\# Injected heading"));
+    assert.ok(render.stdout.includes("Approve? - injected item"));
+    assert.match(render.stdout, /Lint status: fail/);
+    assert.deepEqual(render.stdout.match(/^#{1,6} .*$/gm), [
+      "# Connector Fixture Review: CLI \\#\\# Injected heading",
+      "## Requests",
+      "## Approval Prompts",
+      "## Findings"
+    ]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("lints a project-management dry-run bundle", async () => {
   const report = await lintBundle("fixtures/project-basic");
   assert.equal(report.ok, true);

@@ -64,6 +64,12 @@ filesystem/runtime errors, which makes them safe to use in CI and pre-release sc
 node bin/connector-fixture-pack.js lint fixtures/crm-basic
 ```
 
+The review renderer keeps fixture-controlled values literal without allowing them
+to alter the document hierarchy. It folds line breaks and other whitespace into
+single spaces, escapes Markdown punctuation in names, request fields, prompts,
+and findings, and uses backtick-safe code spans for ids. The visible text remains
+readable even when a value contains headings, list markers, links, or code fences.
+
 The lint pass enforces the shipped V1 bundle, request, response, and approval schemas. `bundle.json` must be an object, and bundle names, versions, and connector names must be non-empty strings. Every non-empty request connector must appear in the `bundle.json` `connectors` array; undeclared connectors are reported against their `requests.json` entry. Requests, responses, approvals, and redactions must be arrays, and every array member must be an object. An approval requires non-empty string `id`, `requestId`, and `prompt` fields plus a boolean `required` field, including approvals attached to read-only requests. A redaction has exactly two required fields for linting: `path` and `reason`, both non-empty strings. Request ids, connector names, operations, methods, and paths must be non-empty strings, and request bodies must be objects. Response ids and request ids must be non-empty strings, response bodies must be objects, and response status must be `dry_run`, `mocked`, or `blocked`. Findings identify the source file and entry index. The review renderer keeps malformed collections and members out of their summaries while preserving all findings in the Markdown output.
 
 Linting also verifies that responses and approval prompts point at real request ids, so stale fixture edits fail before they become release examples. Every request whose HTTP method is not `GET`, `HEAD`, `OPTIONS`, or `TRACE` must have a corresponding approval entry with `required` set to the boolean `true`. Read-only requests do not require approval entries.

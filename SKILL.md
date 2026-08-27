@@ -7,7 +7,7 @@ Use this skill when an agent needs reusable connector fixtures for CRM, project-
 ## Required Tools Or Inputs
 
 - A local repository or workspace.
-- Node.js 20 or newer.
+- Node.js 22 or newer (Node.js 22 and 24 are the supported release baselines).
 - Sanitized examples of connector requests, dry-run responses, approvals, and redaction rules.
 
 ## Side-Effect Boundaries

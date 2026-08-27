@@ -2,7 +2,7 @@
 
 ## Verification Run
 
-- `npm test` passed with 4 tests.
+- `npm test` passed the complete current test suite.
 - `npm run check` passed package metadata and required-file checks.
 - `npm run build` passed package checks.
 - `npm run smoke` passed lint and rendered the CRM fixture review pack.

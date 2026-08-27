@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- Harden CI: pin checkout and setup-node actions to immutable SHA refs, run the Node 20/22 matrix, and verify the build before tests.
+- Harden CI: pin checkout and setup-node actions to immutable SHA refs, run the supported Node 22/24 matrix with lockfile caching and `npm ci`, and verify the complete release gate.
 - Report non-object request, response, and approval entries without aborting lint or review rendering.
 - Enforce the published bundle, request, and response value constraints during fixture linting.
 - Require every non-safe HTTP request to have an approval entry with `required: true`.

@@ -50,6 +50,6 @@
   },
   "homepage": "https://github.com/rogerchappel/connector-fixture-pack#readme",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }

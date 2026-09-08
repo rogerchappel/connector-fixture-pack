@@ -11,6 +11,10 @@ const required = [
   "docs/TASKS.md",
   "docs/ORCHESTRATION.md",
   "schemas/bundle.schema.json",
+  "schemas/request.schema.json",
+  "schemas/response.schema.json",
+  "schemas/approval.schema.json",
+  "schemas/redaction.schema.json",
   "fixtures/crm-basic/bundle.json"
 ];
 

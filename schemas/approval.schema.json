@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rogerchappel/connector-fixture-pack/schemas/approval.schema.json",
+  "title": "Connector Fixture Approval",
+  "type": "object",
+  "required": ["id", "requestId", "prompt", "required"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "requestId": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "required": { "type": "boolean" }
+  }
+}

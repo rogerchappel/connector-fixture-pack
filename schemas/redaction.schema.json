@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rogerchappel/connector-fixture-pack/schemas/redaction.schema.json",
+  "title": "Connector Fixture Redaction",
+  "type": "object",
+  "required": ["path", "reason"],
+  "properties": {
+    "path": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "reason": { "type": "string", "minLength": 1, "pattern": "\\S" }
+  }
+}

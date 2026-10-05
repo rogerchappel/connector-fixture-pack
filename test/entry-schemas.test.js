@@ -7,15 +7,32 @@ async function readJson(file) {
 }
 
 function schemaErrors(schema, value) {
+  if (schema === null || typeof schema !== "object" || Array.isArray(schema)) {
+    return ["schema must be an object"];
+  }
   if (schema.type === "object" && (typeof value !== "object" || value === null || Array.isArray(value))) {
     return ["must be an object"];
   }
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return ["value must be an object"];
+  }
+  if (schema.required !== undefined && (!Array.isArray(schema.required) || !schema.required.every((field) => typeof field === "string"))) {
+    return ["schema.required must be an array of strings"];
+  }
+  if (schema.properties !== undefined && (schema.properties === null || typeof schema.properties !== "object" || Array.isArray(schema.properties))) {
+    return ["schema.properties must be an object"];
+  }
+  const required = schema.required ?? [];
+  const properties = schema.properties ?? {};
+  if (Object.values(properties).some((rules) => rules === null || typeof rules !== "object" || Array.isArray(rules))) {
+    return ["schema.properties entries must be objects"];
+  }
 
   const errors = [];
-  for (const field of schema.required) {
+  for (const field of required) {
     if (!(field in value)) errors.push(`missing ${field}`);
   }
-  for (const [field, rules] of Object.entries(schema.properties)) {
+  for (const [field, rules] of Object.entries(properties)) {
     if (!(field in value)) continue;
     if (rules.type && (rules.type === "array" ? !Array.isArray(value[field]) : typeof value[field] !== rules.type)) errors.push(`${field} must be ${rules.type}`);
     if (rules.minLength && typeof value[field] === "string" && value[field].length < rules.minLength) {
@@ -27,6 +44,21 @@ function schemaErrors(schema, value) {
   }
   return errors;
 }
+
+test("malformed schemas produce controlled diagnostics", () => {
+  const malformed = [
+    [null, "schema must be an object"],
+    [{ type: "object", required: null }, "schema.required must be an array of strings"],
+    [{ type: "object", properties: [] }, "schema.properties must be an object"],
+    [{ type: "object", properties: { name: null } }, "schema.properties entries must be objects"],
+  ];
+
+  for (const [schema, diagnostic] of malformed) {
+    assert.deepEqual(schemaErrors(schema, {}), [diagnostic]);
+  }
+  assert.deepEqual(schemaErrors({ type: "object" }, {}), []);
+  assert.deepEqual(schemaErrors({ type: "object" }, null), ["must be an object"]);
+});
 
 test("published approval schema accepts fixtures and rejects malformed fields", async () => {
   const schema = await readJson("schemas/approval.schema.json");

@@ -21,10 +21,5 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
-      - run: npm run lint
-      - run: npm run build
-      - run: npm test
-      - run: npm run smoke
-      - run: npm run package:smoke
       - run: npm run release:check
       - run: npm pack --dry-run

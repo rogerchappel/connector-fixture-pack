@@ -27,6 +27,21 @@ if (!pkg.bin || !pkg.exports || !pkg.scripts?.smoke) {
   throw new Error("package metadata is missing CLI, exports, or smoke script");
 }
 
+const targets = [
+  ...Object.values(pkg.bin),
+  ...Object.values(pkg.exports).flatMap((value) => typeof value === "string" ? [value] : Object.values(value))
+];
+for (const target of targets) {
+  if (typeof target !== "string" || !target.startsWith("./")) {
+    throw new Error(`package target must be a relative path: ${target}`);
+  }
+  try {
+    await access(target.slice(2));
+  } catch {
+    throw new Error(`package target does not exist: ${target}`);
+  }
+}
+
 if (pkg.engines?.node !== ">=22") {
   throw new Error("package engines must require the supported Node.js 22+ baseline");
 }

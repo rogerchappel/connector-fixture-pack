@@ -50,3 +50,17 @@ test('package checker rejects missing CLI, exports, or smoke metadata', async ()
     assert.match(result.stderr, /package metadata is missing CLI, exports, or smoke script/);
   }
 });
+
+
+test('package checker rejects missing declared bin and exports targets', async () => {
+  for (const field of ['bin', 'exports']) {
+    const result = await runChecker(async (directory) => {
+      const file = path.join(directory, 'package.json');
+      const pkg = JSON.parse(await (await import('node:fs/promises')).readFile(file, 'utf8'));
+      pkg[field] = Object.fromEntries(Object.entries(pkg[field]).map(([key]) => [key, './missing-target.js']));
+      await writeFile(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    });
+    assert.notEqual(result.status, 0, `${field} target should be required`);
+    assert.match(result.stderr, /package target does not exist/);
+  }
+});

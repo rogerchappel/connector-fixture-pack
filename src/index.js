@@ -228,10 +228,12 @@ function validateEntries(file, entries, findings, requiredKeys) {
         findings.push(finding("error", file, `Entry ${index} is missing ${key}.`));
       }
     }
-    if (entry.id && ids.has(entry.id)) {
-      findings.push(finding("error", file, `Duplicate id ${entry.id}.`));
+    if (Object.hasOwn(entry, "id")) {
+      if (ids.has(entry.id)) {
+        findings.push(finding("error", file, `Duplicate id ${entry.id}.`));
+      }
+      ids.add(entry.id);
     }
-    if (entry.id) ids.add(entry.id);
   });
 }
 

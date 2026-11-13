@@ -829,3 +829,28 @@ test("CLI smoke renders a review pack", () => {
   assert.match(output, /Connector Fixture Review: crm-basic/);
   assert.match(output, /crm-create-note/);
 });
+
+
+test("rejects empty and duplicate entry IDs deterministically", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-"));
+  try {
+    await initBundle(directory);
+    const requestsPath = path.join(directory, "requests.json");
+    const { readFile, writeFile } = await import("node:fs/promises");
+    const requests = JSON.parse(await readFile(requestsPath, "utf8"));
+    requests.push({ ...requests[0], id: "" }, { ...requests[0], id: "" });
+    await writeFile(requestsPath, JSON.stringify(requests));
+
+    const first = await lintBundle(directory);
+    const second = await lintBundle(directory);
+    assert.equal(first.ok, false);
+    assert.deepEqual(first.findings, second.findings);
+    assert.deepEqual(first.findings.filter((item) => item.file === "requests.json").map((item) => item.message), [
+      "Duplicate id .",
+      "Entry 1 id must be a non-empty string.",
+      "Entry 2 id must be a non-empty string."
+    ]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

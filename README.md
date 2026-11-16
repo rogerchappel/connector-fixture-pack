@@ -4,8 +4,10 @@
 
 ## Quickstart
 
+Install the exact dependency versions recorded in the lockfile for a reproducible setup:
+
 ```sh
-npm install
+npm ci
 npm run lint
 npm test
 npm run smoke
@@ -27,9 +29,10 @@ The release gate runs package checks, tests, the fixture-backed CLI smoke, and a
 
 ## Verification
 
-Run the same checks used for release-readiness before publishing or opening a release PR:
+Start from a reproducible lockfile-based install, then run the same checks used for release-readiness before publishing or opening a release PR:
 
 ```bash
+npm ci
 npm run check
 npm test
 npm run build

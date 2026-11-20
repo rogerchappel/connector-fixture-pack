@@ -17,6 +17,8 @@ const SECRET_PATTERNS = [
   /AKIA[0-9A-Z]{16}/
 ];
 
+const SENSITIVE_FIELD_NAMES = /(?:api[_-]?key|access[_-]?token|auth(?:orization)?|client[_-]?secret|password|passwd|private[_-]?key|refresh[_-]?token|secret|token)/i;
+
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
 const RESPONSE_STATUSES = new Set(["dry_run", "mocked", "blocked"]);
 
@@ -78,6 +80,7 @@ export async function lintBundle(directory) {
   validateRequestReferences(bundle["requests.json"], bundle["approvals.json"], "approvals.json", findings);
   validateApprovalRequirements(bundle["requests.json"], bundle["approvals.json"], findings);
   validateRedactions(bundle["redactions.json"], bundle, findings);
+  scanSensitiveFields(bundle, findings);
   scanSecretLikeValues(bundle, findings);
 
   return result(directory, bundle, findings);
@@ -436,6 +439,37 @@ function validateRedactions(redactions, bundle, findings) {
   if (serialized.includes("@") && ![...paths].some((item) => /owner|email|assignee|recipient|sender/i.test(item))) {
     findings.push(finding("warning", "redactions.json", "Email-like fixture data should be covered by a redaction path."));
   }
+}
+
+function scanSensitiveFields(bundle, findings) {
+  const sources = [
+    ["bundle.json", bundle["bundle.json"]],
+    ["requests.json", bundle["requests.json"]],
+    ["responses.json", bundle["responses.json"]],
+    ["approvals.json", bundle["approvals.json"]]
+  ];
+
+  for (const [file, value] of sources) {
+    for (const field of findSensitiveFields(value)) {
+      findings.push(finding("error", file, `Sensitive-looking field ${field} must not contain fixture values.`));
+    }
+  }
+}
+
+function findSensitiveFields(value, prefix = "$", found = []) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => findSensitiveFields(item, `${prefix}[${index}]`, found));
+  } else if (isObject(value)) {
+    for (const [key, child] of Object.entries(value)) {
+      const fieldPath = `${prefix}.${key}`;
+      if (SENSITIVE_FIELD_NAMES.test(key) && child !== null && child !== undefined && child !== "") {
+        found.push(fieldPath);
+      } else {
+        findSensitiveFields(child, fieldPath, found);
+      }
+    }
+  }
+  return found;
 }
 
 function scanSecretLikeValues(bundle, findings) {

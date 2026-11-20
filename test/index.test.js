@@ -107,6 +107,23 @@ test("flags secret-like fixture values", async () => {
   assert.equal(report.findings.some((item) => item.message.includes("Secret-like value")), true);
 });
 
+test("flags sensitive assignments that use generic names", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-sensitive-values-"));
+  try {
+    await initBundle(directory, { name: "sensitive-values" });
+    const requests = JSON.parse(await readFile(path.join(directory, "requests.json"), "utf8"));
+    requests[0].body = { api_key: "ordinary-looking-value-12345" };
+    await writeFile(path.join(directory, "requests.json"), `${JSON.stringify(requests, null, 2)}\n`);
+
+    const report = await lintBundle(directory);
+    assert.equal(report.ok, false);
+    assert.ok(report.findings.some((item) => item.message.includes("Sensitive-looking field") && item.file === "requests.json"));
+    assert.ok(!report.findings.some((item) => item.message.includes("ordinary-looking-value-12345")));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("flags responses and approvals that reference missing requests", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "connector-fixture-pack-refs-"));
   try {

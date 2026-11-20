@@ -92,7 +92,7 @@ const markdown = await renderReviewPack("fixtures/crm-basic");
 
 - The tool never calls external services.
 - Fixture examples must use fake identifiers, placeholder tokens, and synthetic account data.
-- Linting fails when obvious secrets, live-looking tokens, or missing redaction coverage are detected.
+- Linting fails when obvious secrets, live-looking tokens, or populated sensitive-looking fields (such as `api_key`, `access_token`, `client_secret`, `password`, or `token`) are detected. This is a heuristic safety net, not a guarantee that all secrets are recognized.
 - Each write request must be documented by a required approval prompt; omitting that prompt is a release-blocking lint error.
 - Approval prompts are treated as documentation for tests, not as permission to execute live actions.
 

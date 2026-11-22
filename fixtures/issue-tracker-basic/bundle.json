@@ -1,0 +1,7 @@
+{
+  "name": "issue-tracker-basic",
+  "version": "0.1.0",
+  "description": "Synthetic issue-tracker ticket fixture for local connector skill tests.",
+  "connectors": ["issue-tracker"],
+  "generatedBy": "connector-fixture-pack"
+}

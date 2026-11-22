@@ -101,6 +101,16 @@ test("lints a project-management dry-run bundle", async () => {
   assert.deepEqual(report.findings, []);
 });
 
+test("lints and renders an issue-tracker ticket fixture", async () => {
+  const report = await lintBundle("fixtures/issue-tracker-basic");
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.findings, []);
+  const markdown = await renderReviewPack("fixtures/issue-tracker-basic");
+  assert.match(markdown, /Connector Fixture Review: issue-tracker-basic/);
+  assert.match(markdown, /issue-create-ticket/);
+  assert.match(markdown, /Lint status: pass/);
+});
+
 test("flags secret-like fixture values", async () => {
   const report = await lintBundle("fixtures/messaging-risky");
   assert.equal(report.ok, false);

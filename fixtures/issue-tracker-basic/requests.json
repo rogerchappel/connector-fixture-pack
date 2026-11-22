@@ -1,0 +1,14 @@
+[
+  {
+    "id": "issue-create-ticket",
+    "connector": "issue-tracker",
+    "operation": "create_ticket",
+    "method": "POST",
+    "path": "/v1/projects/issue_demo_789/tasks",
+    "body": {
+      "projectId": "issue_demo_789",
+      "title": "Review connector rollout",
+      "assignee": "reporter@example.invalid"
+    }
+  }
+]

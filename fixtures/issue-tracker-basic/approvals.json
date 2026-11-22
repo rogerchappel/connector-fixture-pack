@@ -1,0 +1,8 @@
+[
+  {
+    "id": "approval-issue-create-ticket",
+    "requestId": "issue-create-ticket",
+    "required": true,
+    "prompt": "Approve creating a project task in project_demo_456?"
+  }
+]

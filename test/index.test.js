@@ -7,6 +7,51 @@ import path from "node:path";
 import test from "node:test";
 import { initBundle, lintBundle, renderReviewPack } from "../src/index.js";
 
+test("packaged request, response, and bundle schemas enforce lint field constraints", async () => {
+  const root = new URL("..", import.meta.url);
+  const schemas = Object.fromEntries(await Promise.all(["request", "response", "bundle"].map(async (name) => [
+    name,
+    JSON.parse(await readFile(new URL(`schemas/${name}.schema.json`, root), "utf8"))
+  ])));
+  const valid = {
+    request: { id: "r1", connector: "crm", operation: "read", method: "GET", path: "/contacts", body: {} },
+    response: { id: "s1", requestId: "r1", status: "dry_run", body: {} },
+    bundle: { name: "sample", version: "1.0", connectors: ["crm"] }
+  };
+  const required = { request: ["id", "connector", "operation", "method", "path", "body"], response: ["id", "requestId", "status", "body"], bundle: ["name", "version", "connectors"] };
+  const types = { id: 7, connector: false, operation: null, method: [], path: {}, requestId: 5, status: "unknown", body: "not-an-object", name: "", version: " ", connectors: [""] };
+  for (const [name, schema] of Object.entries(schemas)) {
+    assert.equal(isValid(schema, valid[name]), true, `${name} valid sample`);
+    assert.equal(isValid(schema, { ...valid[name], unexpected: true }), false, `${name} rejects unknown fields`);
+    for (const field of required[name]) {
+      const missing = { ...valid[name] };
+      delete missing[field];
+      assert.equal(isValid(schema, missing), false, `${name} requires ${field}`);
+    }
+  }
+  for (const [name, schema] of Object.entries(schemas)) {
+    for (const field of Object.keys(types)) {
+      if (schema.properties[field]) {
+        assert.equal(isValid(schema, { ...valid[name], [field]: types[field] }), false, `${name}.${field} rejects malformed value`);
+      }
+    }
+  }
+});
+
+function isValid(schema, value) {
+  if (schema.enum) return schema.enum.includes(value);
+  if (schema.type === "object") {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+    if (schema.required?.some((field) => !(field in value))) return false;
+    if (schema.additionalProperties === false && Object.keys(value).some((key) => !(key in schema.properties))) return false;
+    return Object.entries(schema.properties ?? {}).every(([key, rule]) => !(key in value) || isValid(rule, value[key]));
+  }
+  if (schema.type === "array") return Array.isArray(value) && value.length >= (schema.minItems ?? 0) && value.every((item) => isValid(schema.items, item));
+  if (schema.type === "string") return typeof value === "string" && value.length >= (schema.minLength ?? 0) && (!schema.pattern || new RegExp(schema.pattern).test(value));
+  if (schema.type === "boolean") return typeof value === "boolean";
+  return true;
+}
+
 test("lints a complete CRM bundle", async () => {
   const report = await lintBundle("fixtures/crm-basic");
   assert.equal(report.ok, true);
